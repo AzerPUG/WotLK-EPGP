@@ -3,7 +3,7 @@ TBCEPGP.events = {}
 TBCEPGP.Version = 4
 local AddOnName = "TBC-EPGP"
 
-local UpdateFrame, EventFrame = nil, nil
+local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel = nil, nil, nil, nil
 
 function TBCEPGP:OnLoad()
     EventFrame = CreateFrame("Frame", nil, UIParent)
@@ -203,7 +203,6 @@ function TBCEPGP.events:AddonLoaded(...)
     end
 end
 
-
 function TBCEPGP.CreateFrameStuffs()
     EPGPUserFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     EPGPUserFrame:SetPoint("CENTER", 0, 0)
@@ -215,15 +214,29 @@ function TBCEPGP.CreateFrameStuffs()
         insets = { left = 1, right = 1, top = 1, bottom = 1 },
     })
     EPGPUserFrame:SetBackdropColor(0.25, 0.25, 0.25, 0.80)
+
+    EPGPUserFrame:EnableMouse(true)
+    EPGPUserFrame:SetMovable(true)
+    EPGPUserFrame:RegisterForDrag("LeftButton")
+    EPGPUserFrame:SetScript("OnDragStart", EPGPUserFrame.StartMoving)
+    EPGPUserFrame:SetScript("OnDragStop", EPGPUserFrame.StopMovingOrSizing)
+
     EPGPUserFrame.header = EPGPUserFrame:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalHuge")
     EPGPUserFrame.header:SetPoint("TOP", 0, -10)
     EPGPUserFrame.header:SetText("|cFF00FFFF" .. AddOnName .. "|r")
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton")
-    EPGPUserFrameCloseButton:SetWidth(25)
-    EPGPUserFrameCloseButton:SetHeight(25)
+    EPGPUserFrameCloseButton:SetSize(25, 25)
     EPGPUserFrameCloseButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", 2, 2)
-    EPGPUserFrameCloseButton:SetScript("OnClick", function() EPGPUserFrame:Hide() end )
+    EPGPUserFrameCloseButton:SetScript("OnClick", function() EPGPUserFrame:Hide() end)
+
+    local AddToDataBaseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    AddToDataBaseButton:SetSize(50, 30)
+    AddToDataBaseButton:SetPoint("TOPLEFT", EPGPUserFrame, "TOPLEFT", 2, -2)
+    AddToDataBaseButton:SetScript("OnClick", function() TBCEPGP:AddTargetToDataBase() end)
+    AddToDataBaseButton.text = AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
+    AddToDataBaseButton.text:SetPoint("CENTER", 0, -1)
+    AddToDataBaseButton.text:SetText("Add\nTarget")
 
     local scrollFrame = CreateFrame("ScrollFrame", "scrollFrame", EPGPUserFrame, "UIPanelScrollFrameTemplate, BackdropTemplate");
     scrollFrame:SetSize(EPGPUserFrame:GetWidth() - 30, EPGPUserFrame:GetHeight() - 40)
@@ -235,21 +248,41 @@ function TBCEPGP.CreateFrameStuffs()
         insets = { left = 1, right = 1, top = 1, bottom = 1 },
     })
     scrollFrame:SetBackdropColor(1, 0.25, 0.25, 0.80)
-    local scrollPanel = CreateFrame("Frame")
-    scrollPanel:SetSize(400, 1000)
+    scrollPanel = CreateFrame("Frame")
+    scrollPanel:SetSize(scrollFrame:GetWidth(), 300)
     scrollPanel:SetPoint("TOP")
+    TBCEPGP:FillUserFrameScrollPanel(scrollPanel)
     scrollFrame:SetScrollChild(scrollPanel)
+end
 
+function TBCEPGP:AddTargetToDataBase()
+    local unitName = UnitName("Target")
+    local unitGUID = UnitGUID("Target")
+    local players = TBCEPGP.DataTable.Players
+    if players[unitGUID] == nil then
+        players[unitGUID] = {}
+        players[unitGUID].Name = unitName
+        players[unitGUID].EP = 0
+        players[unitGUID].GP = 0
+        local year, month, date = TBCEPGP:GetDateTime()
+        local dateString = year .. "/" .. month .. "/" .. date
+        players[unitGUID][dateString] = {}
+        print("Adding Target to DataTable:", unitName, "-", unitGUID)
+    end
+    TBCEPGP:FillUserFrameScrollPanel(scrollPanel)
+end
+
+function TBCEPGP:FillUserFrameScrollPanel(panel)
     local players = TBCEPGP.DataTable.Players
     local index = 0
     local playerFrames = {}
     for key, value in pairs(players) do
         index = index + 1
-        print("Key:", key, "     - Value:", value.Name, "     - Index:", index)
         local curPlayerFrame = playerFrames[index]
-        curPlayerFrame = CreateFrame("Frame", nil, scrollFrame, "BackdropTemplate")
-        curPlayerFrame:SetSize(scrollFrame:GetWidth(), 25)
-        curPlayerFrame:SetPoint("TOPLEFT", 0, -24 * index + 24)
+        curPlayerFrame = CreateFrame("Frame", nil, scrollPanel, "BackdropTemplate")
+        curPlayerFrame:SetSize(scrollPanel:GetWidth(), 25)
+        curPlayerFrame:SetPoint("TOPLEFT", scrollPanel, "TOPLEFT", 0, -24 * index + 24)
+        curPlayerFrame:EnableMouse(true)
         curPlayerFrame:SetBackdrop({
             bgFile = "Interface/Tooltips/UI-Tooltip-Background",
             edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -263,15 +296,23 @@ function TBCEPGP.CreateFrameStuffs()
         curPlayerFrame.Name:SetPoint("LEFT", 5, 0)
         curPlayerFrame.Name:SetText(value.Name)
 
-        curPlayerFrame.EP = CreateFrame("EditBox", nil, scrollFrame, "InputBoxTemplate")
+        curPlayerFrame.EP = CreateFrame("EditBox", nil, scrollPanel, "InputBoxTemplate")
         curPlayerFrame.EP:SetSize(50, 25)
         curPlayerFrame.EP:SetPoint("LEFT", curPlayerFrame.Name, "RIGHT", 10, 0)
         curPlayerFrame.EP:SetText(value.EP)
+        curPlayerFrame.EP:SetAutoFocus(false)
+        curPlayerFrame.EP:SetFrameStrata("HIGH")
+        curPlayerFrame.EP:SetNumeric(true)
+        curPlayerFrame.EP:SetScript("OnEditFocusLost", function() print("FocusLost EP:", curPlayerFrame.EP:GetText()) end)
 
-        curPlayerFrame.GP = CreateFrame("EditBox", nil, scrollFrame, "InputBoxTemplate")
+        curPlayerFrame.GP = CreateFrame("EditBox", nil, scrollPanel, "InputBoxTemplate")
         curPlayerFrame.GP:SetSize(50, 25)
         curPlayerFrame.GP:SetPoint("LEFT", curPlayerFrame.EP, "RIGHT", 10, 0)
         curPlayerFrame.GP:SetText(value.GP)
+        curPlayerFrame.GP:SetAutoFocus(false)
+        curPlayerFrame.GP:SetFrameStrata("HIGH")
+        curPlayerFrame.GP:SetNumeric(true)
+        curPlayerFrame.GP:SetScript("OnEditFocusLost", function() print("FocusLost GP:", curPlayerFrame.GP:GetText()) end)
 
         -- ToDo Later Version:
         -- Add Up and Down buttons to text box, to easily add/deduct x points.
@@ -285,4 +326,8 @@ TBCEPGP:OnLoad()
 
 TBCEPGP.SlashCommands["roll"] = function(value)
     TBCEPGP:RollItem(value)
+end
+
+TBCEPGP.SlashCommands["show"] = function(value)
+    EPGPUserFrame:Show()
 end
