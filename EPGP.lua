@@ -199,6 +199,85 @@ end
 function TBCEPGP.events:AddonLoaded(...)
     if ... == "TBC-EPGP" then
         TBCEPGP.DataTable = TBCEPGPDataTable
+        TBCEPGP.CreateFrameStuffs()
+    end
+end
+
+
+function TBCEPGP.CreateFrameStuffs()
+    EPGPUserFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    EPGPUserFrame:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame:SetSize(500, 300)
+    EPGPUserFrame:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    EPGPUserFrame:SetBackdropColor(0.25, 0.25, 0.25, 0.80)
+    EPGPUserFrame.header = EPGPUserFrame:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalHuge")
+    EPGPUserFrame.header:SetPoint("TOP", 0, -10)
+    EPGPUserFrame.header:SetText("|cFF00FFFF" .. AddOnName .. "|r")
+
+    local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton")
+    EPGPUserFrameCloseButton:SetWidth(25)
+    EPGPUserFrameCloseButton:SetHeight(25)
+    EPGPUserFrameCloseButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", 2, 2)
+    EPGPUserFrameCloseButton:SetScript("OnClick", function() EPGPUserFrame:Hide() end )
+
+    local scrollFrame = CreateFrame("ScrollFrame", "scrollFrame", EPGPUserFrame, "UIPanelScrollFrameTemplate, BackdropTemplate");
+    scrollFrame:SetSize(EPGPUserFrame:GetWidth() - 30, EPGPUserFrame:GetHeight() - 40)
+    scrollFrame:SetPoint("BOTTOM", -10, 5)
+    scrollFrame:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    scrollFrame:SetBackdropColor(1, 0.25, 0.25, 0.80)
+    local scrollPanel = CreateFrame("Frame")
+    scrollPanel:SetSize(400, 1000)
+    scrollPanel:SetPoint("TOP")
+    scrollFrame:SetScrollChild(scrollPanel)
+
+    local players = TBCEPGP.DataTable.Players
+    local index = 0
+    local playerFrames = {}
+    for key, value in pairs(players) do
+        index = index + 1
+        print("Key:", key, "     - Value:", value.Name, "     - Index:", index)
+        local curPlayerFrame = playerFrames[index]
+        curPlayerFrame = CreateFrame("Frame", nil, scrollFrame, "BackdropTemplate")
+        curPlayerFrame:SetSize(scrollFrame:GetWidth(), 25)
+        curPlayerFrame:SetPoint("TOPLEFT", 0, -24 * index + 24)
+        curPlayerFrame:SetBackdrop({
+            bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            edgeSize = 12,
+            insets = { left = 1, right = 1, top = 1, bottom = 1 },
+        })
+        curPlayerFrame:SetBackdropColor(1, 1, 1, 0.80)
+
+        curPlayerFrame.Name = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+        curPlayerFrame.Name:SetSize(100, 25)
+        curPlayerFrame.Name:SetPoint("LEFT", 5, 0)
+        curPlayerFrame.Name:SetText(value.Name)
+
+        curPlayerFrame.EP = CreateFrame("EditBox", nil, scrollFrame, "InputBoxTemplate")
+        curPlayerFrame.EP:SetSize(50, 25)
+        curPlayerFrame.EP:SetPoint("LEFT", curPlayerFrame.Name, "RIGHT", 10, 0)
+        curPlayerFrame.EP:SetText(value.EP)
+
+        curPlayerFrame.GP = CreateFrame("EditBox", nil, scrollFrame, "InputBoxTemplate")
+        curPlayerFrame.GP:SetSize(50, 25)
+        curPlayerFrame.GP:SetPoint("LEFT", curPlayerFrame.EP, "RIGHT", 10, 0)
+        curPlayerFrame.GP:SetText(value.GP)
+
+        -- ToDo Later Version:
+        -- Add Up and Down buttons to text box, to easily add/deduct x points.
+        -- Shift / Alt / CTRL + Click for other values.
+        -- UIPanelScrollUpButtonTemplate
+        -- UIPanelScrollDownButtonTemplate
     end
 end
 
