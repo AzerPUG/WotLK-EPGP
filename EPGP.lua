@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.events = {}
-TBCEPGP.Version = 3
+TBCEPGP.Version = 4
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame = nil, nil
@@ -96,13 +96,26 @@ function TBCEPGP:SaveEncounterPull(encounterID)
 
     if DataTable[dateString] == nil then DataTable[dateString] = {} end
     local curDate = DataTable[dateString]
-    Dates[#Dates + 1] = dateString
+    local datePresent = false
+    for i = 1, #Dates do
+        if Dates[i] == dateString then datePresent = true end
+    end
+    if datePresent == false then
+        Dates[#Dates + 1] = dateString
+    end
 
     if curDate.Encounters == nil then curDate.Encounters = {} end
     local Encounters = curDate.Encounters
     if curDate[encounterID] == nil then curDate[encounterID] = {} end
     local curEncounter = curDate[encounterID]
-    Encounters[#Encounters + 1] = encounterID
+    local encounterPresent = false
+    for i = 1, #Dates do
+        if Encounters[i] == encounterID then encounterPresent = true end
+    end
+    if encounterPresent == false then
+        Encounters[#Encounters + 1] = encounterID
+    end
+    curDate.Encounters = Encounters
 
     if curEncounter.Pulls == nil then curEncounter.Pulls = {} end
     local Pulls = curEncounter.Pulls
