@@ -6,9 +6,12 @@ local AddOnName = "TBC-EPGP"
 local UpdateFrame, EventFrame = nil, nil
 
 function TBCEPGP:OnLoad()
+    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
+
     EventFrame = CreateFrame("Frame", nil, UIParent)
     TBCEPGP:RegisterEvents("ENCOUNTER_START", function(...) TBCEPGP.events:EncounterStart(...) end)
     TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.events:AddonLoaded(...) end)
+    TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.events:ChatMsgAddon(...) end)
 
     EventFrame:SetScript("OnEvent", function(...)
         TBCEPGP:OnEvent(...)
@@ -141,7 +144,7 @@ function TBCEPGP:SaveRaiders()
                 TBCEPGP.DataTable.Players[curGUID].EP = 0
                 TBCEPGP.DataTable.Players[curGUID].GP = 0
                 local year, month, date = TBCEPGP:GetDateTime()
-                local dateString = year .. "/" .. month .. "/" .. date
+                local dateString = year .. month .. date
                 TBCEPGP.DataTable.Players[curGUID][dateString] = {}
             end
         end
@@ -177,13 +180,38 @@ function TBCEPGP:MathRound(value)
 end
 
 function TBCEPGP:RollItem(inputLink)
-    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(inputLink)
-    if itemEquipLoc == nil or itemEquipLoc == "" then itemEquipLoc = "Not Equipable!" end
-    print("EPGP Rolling Item:", itemLink)
-    print("iLevel:", itemLevel, " - Quality:", itemQuality, " - Slot:", itemEquipLoc)
-    print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemQuality, itemLevel))
-    print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemEquipLoc))
-    print("Rounded Price:", TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel))
+    if inputLink == nil then print("No ItemLink provided!")
+    else
+        local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(inputLink)
+        if itemEquipLoc == nil or itemEquipLoc == "" then itemEquipLoc = "Not Equipable!" end
+        print("EPGP Rolling Item:", itemLink)
+        print("iLevel:", itemLevel, " - Quality:", itemQuality, " - Slot:", itemEquipLoc)
+        print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemQuality, itemLevel))
+        print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemEquipLoc))
+        print("Rounded Price:", TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel))
+    end
+end
+
+function TBCEPGP:SendChatMsgAddon()
+    local message = "Players:"
+    local players = TBCEPGPDataTable.Players
+    for key, value in pairs(players) do
+        message = message .. value.Name .. ":"
+    end
+    print("SendingAddOnMessage:", message)
+    C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"RAID", 1)
+end
+
+function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
+    local playerName = UnitName("player")
+    local playerServer = GetRealmName()
+    if sender == playerName .. "-" .. playerServer then print("Received Own AddOn Message!")
+    else
+        if prefix == "TBCEPGP" then
+            print("Message Received from:", sender)
+            print("Message:", payload)
+        end
+    end
 end
 
 function TBCEPGP:OnEvent(_, event, ...)
@@ -207,3 +235,33 @@ TBCEPGP:OnLoad()
 TBCEPGP.SlashCommands["roll"] = function(value)
     TBCEPGP:RollItem(value)
 end
+
+TBCEPGP.SlashCommands["sync"] = function(value)
+    print("Trying to sync!")
+    TBCEPGP:SendChatMsgAddon()
+end
+
+
+
+
+--[[
+
+    /sync to REQUEST a sync...
+    when sync is requested, it send the latest data with the request.
+    all those allowed to sync, will then send everything from THAT date, untill current date.
+    Date equal to latest date should be added for purpose of multi-raids.
+    new part in data table; latest date, that gets updated every time there is something new.
+
+    Sync-send can loop over all players and then track if they had something on that date or later.
+    Sync-send also loop over all saved dates, and will send the ones from that specific date to latest.
+        Easilly iterate over all possible ones. From request date until current date, everything in between if nil, do nothing.
+        Just to be sure, assume all months have 31 days, easy mode.
+
+    Sync receive gets all information one player, one date at a time.
+    SyncR will go over all data, checking if players are in list, if info is in list and if it needs to be added.
+
+    Later, for extra purposes;
+    SyncSend should send a single message ahead, notifying how much there needs to be send.
+    Both SyncSender and SyncReceiver get a small box that shows how much there needs to be send and track every new date.
+    This way there is more or less a loading screen.
+]]
