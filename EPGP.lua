@@ -303,7 +303,7 @@ function TBCEPGP:FillUserFrameScrollPanel(panel)
         curPlayerFrame.EP:SetAutoFocus(false)
         curPlayerFrame.EP:SetFrameStrata("HIGH")
         curPlayerFrame.EP:SetNumeric(true)
-        curPlayerFrame.EP:SetScript("OnEditFocusLost", function() print("FocusLost EP:", curPlayerFrame.EP:GetText()) end)
+        curPlayerFrame.EP:HookScript("OnEditFocusLost", function() print("FocusLost EP:", curPlayerFrame.EP:GetText()) end)
 
         curPlayerFrame.GP = CreateFrame("EditBox", nil, scrollPanel, "InputBoxTemplate")
         curPlayerFrame.GP:SetSize(50, 25)
@@ -312,7 +312,7 @@ function TBCEPGP:FillUserFrameScrollPanel(panel)
         curPlayerFrame.GP:SetAutoFocus(false)
         curPlayerFrame.GP:SetFrameStrata("HIGH")
         curPlayerFrame.GP:SetNumeric(true)
-        curPlayerFrame.GP:SetScript("OnEditFocusLost", function() print("FocusLost GP:", curPlayerFrame.GP:GetText()) end)
+        curPlayerFrame.GP:HookScript("OnEditFocusLost", function() print("FocusLost GP:", curPlayerFrame.GP:GetText()) end)
 
         -- ToDo Later Version:
         -- Add Up and Down buttons to text box, to easily add/deduct x points.
