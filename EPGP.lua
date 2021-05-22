@@ -240,28 +240,3 @@ TBCEPGP.SlashCommands["sync"] = function(value)
     print("Trying to sync!")
     TBCEPGP:SendChatMsgAddon()
 end
-
-
-
-
---[[
-
-    /sync to REQUEST a sync...
-    when sync is requested, it send the latest data with the request.
-    all those allowed to sync, will then send everything from THAT date, untill current date.
-    Date equal to latest date should be added for purpose of multi-raids.
-    new part in data table; latest date, that gets updated every time there is something new.
-
-    Sync-send can loop over all players and then track if they had something on that date or later.
-    Sync-send also loop over all saved dates, and will send the ones from that specific date to latest.
-        Easilly iterate over all possible ones. From request date until current date, everything in between if nil, do nothing.
-        Just to be sure, assume all months have 31 days, easy mode.
-
-    Sync receive gets all information one player, one date at a time.
-    SyncR will go over all data, checking if players are in list, if info is in list and if it needs to be added.
-
-    Later, for extra purposes;
-    SyncSend should send a single message ahead, notifying how much there needs to be send.
-    Both SyncSender and SyncReceiver get a small box that shows how much there needs to be send and track every new date.
-    This way there is more or less a loading screen.
-]]
