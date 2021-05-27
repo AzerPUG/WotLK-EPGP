@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.events = {}
-TBCEPGP.Version = 4
+TBCEPGP.Version = 5
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame = nil, nil
@@ -90,69 +90,6 @@ function TBCEPGP:GetNumericMonth(month)
     return monthN
 end
 
-function TBCEPGP:SaveEncounterPull(encounterID)
-    local year, month, date = TBCEPGP:GetDateTime()
-    local dateString = year .. month .. date
-    local DataTable = TBCEPGP.DataTable
-
-    local Dates = DataTable.Dates
-
-    if DataTable[dateString] == nil then DataTable[dateString] = {} end
-    local curDate = DataTable[dateString]
-    local datePresent = false
-    for i = 1, #Dates do
-        if Dates[i] == dateString then datePresent = true end
-    end
-    if datePresent == false then
-        Dates[#Dates + 1] = dateString
-    end
-
-    if curDate.Encounters == nil then curDate.Encounters = {} end
-    local Encounters = curDate.Encounters
-    if curDate[encounterID] == nil then curDate[encounterID] = {} end
-    local curEncounter = curDate[encounterID]
-    local encounterPresent = false
-    for i = 1, #Dates do
-        if Encounters[i] == encounterID then encounterPresent = true end
-    end
-    if encounterPresent == false then
-        Encounters[#Encounters + 1] = encounterID
-    end
-    curDate.Encounters = Encounters
-
-    if curEncounter.Pulls == nil then curEncounter.Pulls = {} end
-    local Pulls = curEncounter.Pulls
-    local curPullNumber = #Pulls + 1
-    if curEncounter[curPullNumber] == nil then curEncounter[curPullNumber] = {} end
-    local curPull = curEncounter[curPullNumber]
-    Pulls[#Pulls + 1] = curPullNumber
-
-    curPull.Players = TBCEPGP:SaveRaiders()
-
-    TBCEPGPDataTable = TBCEPGP.DataTable
-end
-
-function TBCEPGP:SaveRaiders()
-    local RaidersList = {}
-    for i = 1, 40 do
-        local curGUID = UnitGUID("Raid" .. i)
-        RaidersList[i] = curGUID
-        if curGUID ~= nil then
-            if TBCEPGP.DataTable.Players[curGUID] == nil then
-                TBCEPGP.DataTable.Players[curGUID] = {}
-                TBCEPGP.DataTable.Players[curGUID].Name = UnitName("Raid" .. i)
-                TBCEPGP.DataTable.Players[curGUID].EP = 0
-                TBCEPGP.DataTable.Players[curGUID].GP = 0
-                local year, month, date = TBCEPGP:GetDateTime()
-                local dateString = year .. month .. date
-                TBCEPGP.DataTable.Players[curGUID][dateString] = {}
-            end
-        end
-    end
-
-    return RaidersList
-end
-
 function TBCEPGP:GetQualityMultiplier(quality, iLevel)
     local multiplier = TBCEPGP.InfoTable.Quality[quality](iLevel)
     return multiplier
@@ -192,24 +129,74 @@ function TBCEPGP:RollItem(inputLink)
     end
 end
 
-function TBCEPGP:SendChatMsgAddon()
-    local message = "Players:"
-    local players = TBCEPGPDataTable.Players
-    for key, value in pairs(players) do
-        message = message .. value.Name .. ":"
+function TBCEPGP:AddPlayerToList(curGUID, curName)
+    local epoch = time()
+    local players = TBCEPGP.DataTable.Players
+    if players[curGUID] == nil then
+        players[curGUID] = {}
+        players[curGUID].Name = curName
+        players[curGUID].Update = epoch
+        players[curGUID].EP = 0
+        players[curGUID].GP = 0
+        local year, month, date = TBCEPGP:GetDateTime()
+        local dateString = year .. month .. date
+        players[curGUID][dateString] = {}
     end
-    print("SendingAddOnMessage:", message)
-    C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"RAID", 1)
+end
+
+function TBCEPGP:SyncRaidersAddOnMsg()
+    local players = TBCEPGPDataTable.Players
+    for playerGUID, playerData in pairs(players) do
+        local message = "Player:"
+        message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.EP .. ":" .. playerData.GP
+        if IsInRaid() then
+            C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"RAID", 1)
+        else
+            C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"GUILD", 1)
+        end
+    end
+    print("Sync AddOn Messages Send!")
 end
 
 function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
     local playerName = UnitName("player")
     local playerServer = GetRealmName()
+    local subPayload = payload
+    local players = TBCEPGPDataTable.Players
+    local subStringList = {}
     if sender == playerName .. "-" .. playerServer then print("Received Own AddOn Message!")
     else
         if prefix == "TBCEPGP" then
-            print("Message Received from:", sender)
-            print("Message:", payload)
+            for i = 1, 5 do
+                if subPayload ~= nil then
+                    subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
+                    local stringFind = string.find(subPayload, ":", 1)
+                    if stringFind ~= nil then
+                        subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
+                    end
+                end
+                subStringList[3] = tonumber(subStringList[3])
+            end
+            print("Sync Received from:", sender)
+
+            for player, playerData in pairs(players) do
+                if players[subStringList[1]] == nil then
+                    local curGUID = subStringList[1]
+                    players[curGUID] = {}
+                    players[curGUID].Name = subStringList[2]
+                    players[curGUID].Update = subStringList[3]
+                    players[curGUID].EP = subStringList[4]
+                    players[curGUID].GP = subStringList[5]
+                else
+                    if playerData.Update < subStringList[3] then
+                        local curGUID = subStringList[1]
+                        players[curGUID].Name = subStringList[2]
+                        players[curGUID].Update = subStringList[3]
+                        players[curGUID].EP = subStringList[4]
+                        players[curGUID].GP = subStringList[5]
+                    end
+                end
+            end
         end
     end
 end
@@ -220,13 +207,21 @@ function TBCEPGP:OnEvent(_, event, ...)
     end
 end
 
-function TBCEPGP.events:EncounterStart(encounterID)
-    TBCEPGP:SaveEncounterPull(encounterID)
-end
-
 function TBCEPGP.events:AddonLoaded(...)
     if ... == "TBC-EPGP" then
         TBCEPGP.DataTable = TBCEPGPDataTable
+    end
+end
+
+function TBCEPGP.events:EncounterStart()
+    local epoch = time()
+    local players = TBCEPGP.DataTable.Players
+    for i = 1, 40 do
+        local curGUID = UnitGUID("Raid" .. i)
+        local curName = UnitName("Raid" .. i)
+        if players[curGUID] == nil then
+            TBCEPGP:AddPlayerToList(curGUID, curName)
+        end
     end
 end
 
@@ -239,4 +234,10 @@ end
 TBCEPGP.SlashCommands["sync"] = function(value)
     print("Trying to sync!")
     TBCEPGP:SendChatMsgAddon()
+end
+
+TBCEPGP.SlashCommands["add"] = function(value)
+    local curGUID = UnitGUID("Target")
+    local curName = UnitName("Target")
+    TBCEPGP:AddPlayerToList(curGUID, curName)
 end
