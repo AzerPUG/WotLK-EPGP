@@ -37,7 +37,7 @@ TBCEPGP.InfoTable =
         ["INVTYPE_RELIC"]          = 0.42,
     },
 }
-TBCEPGP.DataTable =
+TBCEPGP.DataTable = -- DO NOT DELETE, DYNAMIC USE!
 {
     ["Players"] =
     {

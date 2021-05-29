@@ -5,6 +5,35 @@ local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel = nil, nil, nil, nil
 local playerFrames = {}
+local sortedColumn, filteredPlayers = nil, nil
+
+local addonLoaded, variablesLoaded = false, false
+
+local classNumbers =
+{
+    [1] = {"Priest", "Pr",},
+    [2] = {"Warlock", "Wl",},
+    [3] = {"Mage", "Ma",},
+    [4] = {"Druid", "Dr",},
+    [5] = {"Rogue", "Ro",},
+    [6] = {"Shaman", "Sh",},
+    [7] = {"Hunter", "Hu",},
+    [8] = {"Warrior", "Wa",},
+    [9] = {"Paladin", "Pa",},
+}
+
+local filteredClasses =
+{
+    ["Priest"] = false,
+    ["Warlock"] = false,
+    ["Mage"] = false,
+    ["Druid"] = false,
+    ["Rogue"] = false,
+    ["Shaman"] = false,
+    ["Hunter"] = false,
+    ["Warrior"] = false,
+    ["Paladin"] = false,
+}
 
 function TBCEPGP:OnLoad()
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
@@ -12,6 +41,7 @@ function TBCEPGP:OnLoad()
     EventFrame = CreateFrame("Frame", nil, UIParent)
     TBCEPGP:RegisterEvents("ENCOUNTER_START", function(...) TBCEPGP.events:EncounterStart(...) end)
     TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.events:AddonLoaded(...) end)
+    TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.events:VariablesLoaded(...) end)
     TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.events:ChatMsgAddon(...) end)
 
     EventFrame:SetScript("OnEvent", function(...)
@@ -130,7 +160,7 @@ function TBCEPGP:RollItem(inputLink)
     end
 end
 
-function TBCEPGP:AddPlayerToList(curGUID, curName)
+function TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
     local numPlayers = TBCEPGP:CountPlayersInList()
     local epoch = time()
     local players = TBCEPGP.DataTable.Players
@@ -138,6 +168,7 @@ function TBCEPGP:AddPlayerToList(curGUID, curName)
         players[curGUID] = {}
         players[curGUID].Name = curName
         players[curGUID].Update = epoch
+        players[curGUID].Class = curClass
         players[curGUID].EP = 0
         players[curGUID].GP = 0
         local year, month, date = TBCEPGP:GetDateTime()
@@ -223,16 +254,36 @@ function TBCEPGP:OnEvent(_, event, ...)
 end
 
 function TBCEPGP.events:AddonLoaded(...)
-    if ... == "TBC-EPGP" then
-        TBCEPGP.DataTable = TBCEPGPDataTable
-        TBCEPGP.CreateFrameStuffs()
+    local addonName = ...
+    if addonName == "TBC-EPGP" then
+        if variablesLoaded == true then TBCEPGP:VarsAndAddonLoaded() else addonLoaded = true end
     end
 end
 
-function TBCEPGP:CreateFrameStuffs()
+function TBCEPGP.events:VariablesLoaded(...)
+    if addonLoaded == true then TBCEPGP:VarsAndAddonLoaded() else variablesLoaded = true end
+end
+
+function TBCEPGP:VarsAndAddonLoaded()
+    if TBCEPGPDataTable == nil then
+        print("TBCEPGPDataTable == nil")
+        TBCEPGPDataTable = TBCEPGP.DataTable
+    elseif TBCEPGPDataTable ~= nil then
+        print("TBCEPGPDataTable == not nil")
+        TBCEPGP.DataTable = TBCEPGPDataTable
+    end
+    TBCEPGP.CreateUserFrame()
+end
+
+function TBCEPGP:CreateUserFrame()
     EPGPUserFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     EPGPUserFrame:SetPoint("CENTER", 0, 0)
-    EPGPUserFrame:SetSize(500, 300)
+    EPGPUserFrame:SetSize(500, 400)
+    EPGPUserFrame:EnableMouse(true)
+    EPGPUserFrame:SetMovable(true)
+    EPGPUserFrame:RegisterForDrag("LeftButton")
+    EPGPUserFrame:SetScript("OnDragStart", EPGPUserFrame.StartMoving)
+    EPGPUserFrame:SetScript("OnDragStop", EPGPUserFrame.StopMovingOrSizing)
     EPGPUserFrame:SetBackdrop({
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -241,15 +292,115 @@ function TBCEPGP:CreateFrameStuffs()
     })
     EPGPUserFrame:SetBackdropColor(0.25, 0.25, 0.25, 0.80)
 
-    EPGPUserFrame:EnableMouse(true)
-    EPGPUserFrame:SetMovable(true)
-    EPGPUserFrame:RegisterForDrag("LeftButton")
-    EPGPUserFrame:SetScript("OnDragStart", EPGPUserFrame.StartMoving)
-    EPGPUserFrame:SetScript("OnDragStop", EPGPUserFrame.StopMovingOrSizing)
+    EPGPUserFrame.Title = EPGPUserFrame:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalHuge")
+    EPGPUserFrame.Title:SetPoint("TOP", 0, -10)
+    EPGPUserFrame.Title:SetText("|cFF00FFFF" .. AddOnName .. "|r")
 
-    EPGPUserFrame.header = EPGPUserFrame:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalHuge")
-    EPGPUserFrame.header:SetPoint("TOP", 0, -10)
-    EPGPUserFrame.header:SetText("|cFF00FFFF" .. AddOnName .. "|r")
+    EPGPUserFrame.Header = CreateFrame("Frame", nil, EPGPUserFrame, "BackdropTemplate")
+    EPGPUserFrame.Header:SetPoint("TOP", -10, -85)
+    EPGPUserFrame.Header:SetSize(EPGPUserFrame:GetWidth() -30, 50)
+    EPGPUserFrame.Header:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    EPGPUserFrame.Header:SetBackdropColor(0.25, 0.25, 0.75, 0.80)
+
+    EPGPUserFrame.Header.Name = EPGPUserFrame.Header:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+    EPGPUserFrame.Header.Name:SetSize(100, 25)
+    EPGPUserFrame.Header.Name:SetPoint("BOTTOMLEFT", 5, 0)
+    EPGPUserFrame.Header.Name:SetText("Name")
+
+    EPGPUserFrame.Header.Class = EPGPUserFrame.Header:CreateFontString("EPGPUserFrame.Header", "ARTWORK", "GameFontNormal")
+    EPGPUserFrame.Header.Class:SetSize(100, 25)
+    EPGPUserFrame.Header.Class:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.Name, "BOTTOMRIGHT", 0, 0)
+    EPGPUserFrame.Header.Class:SetText("Class")
+
+    local FilterButtons = {}
+    for i = 1, 9 do
+        FilterButtons[i] = CreateFrame("Button", nil, EPGPUserFrame.Header, "BackdropTemplate")
+        FilterButtons[i]:SetSize(20, 16)
+
+        local xOff, yOff = nil, nil
+        if i == 1 or i == 4 or i == 7 then
+            xOff = -18
+        elseif i == 2 or i == 5 or i == 8 then
+            xOff = -0
+        elseif i == 3 or i == 6 or i == 9 then
+            xOff = 18
+        end
+        if i == 1 or i == 2 or i == 3 then
+            yOff = 13
+        elseif i == 4 or i == 5 or i == 6 then
+            yOff = 0
+        elseif i == 7 or i == 8 or i == 9 then
+            yOff = -13
+        end
+
+        FilterButtons[i]:SetPoint("LEFT", EPGPUserFrame.Header.Class, "RIGHT", -60 + xOff, 30 + yOff)
+
+        FilterButtons[i]:SetBackdrop({
+            bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+            edgeSize = 10,
+            insets = {left = 3, right = 3, top = 3, bottom = 3},
+        })
+
+        local r, g = 1, 0
+        FilterButtons[i]:SetBackdropColor(1, 0, 0, 1)
+
+        FilterButtons[i]:SetScript("OnClick",
+        function()
+            print("FilterButton", i, "clicked!", filteredClasses[classNumbers[i][1]])
+            if filteredClasses[classNumbers[i][1]] then
+                filteredClasses[classNumbers[i][1]] = false
+                r = 1
+                g = 0
+            else
+                filteredClasses[classNumbers[i][1]] = true
+                r = 0
+                g = 1
+            end
+            local players = TBCEPGPDataTable.Players
+            filteredPlayers = {}
+            for key, value in pairs(players) do
+                if filteredClasses[value.Class] then
+                    filteredPlayers[key] = value
+                    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+                end
+            end
+            FilterButtons[i]:SetBackdropColor(r, g, 0, 1)
+        end)
+
+        FilterButtons[i].text = FilterButtons[i]:CreateFontString("FilterButton", "ARTWORK", "GameFontNormalTiny")
+        FilterButtons[i].text:SetPoint("CENTER", 0, 0)
+        FilterButtons[i].text:SetText(classNumbers[i][2])
+    end
+
+    EPGPUserFrame.Header.curEP = EPGPUserFrame.Header:CreateFontString("EPGPUserFrame.Header", "ARTWORK", "GameFontNormal")
+    EPGPUserFrame.Header.curEP:SetSize(50, 25)
+    EPGPUserFrame.Header.curEP:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.Class, "BOTTOMRIGHT", 10, 0)
+    EPGPUserFrame.Header.curEP:SetText("EP")
+
+    EPGPUserFrame.Header.changeEP = CreateFrame("EditBox", nil, EPGPUserFrame.Header, "InputBoxTemplate")
+    EPGPUserFrame.Header.changeEP:SetSize(30, 25)
+    EPGPUserFrame.Header.changeEP:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.curEP, "BOTTOMRIGHT", 10, 0)
+    EPGPUserFrame.Header.changeEP:SetAutoFocus(false)
+    EPGPUserFrame.Header.changeEP:SetFrameStrata("HIGH")
+    EPGPUserFrame.Header.changeEP:SetText(0)
+
+    EPGPUserFrame.Header.curGP = EPGPUserFrame.Header:CreateFontString("EPGPUserFrame.Header", "ARTWORK", "GameFontNormal")
+    EPGPUserFrame.Header.curGP:SetSize(50, 25)
+    EPGPUserFrame.Header.curGP:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.changeEP, "BOTTOMRIGHT", 25, 0)
+    EPGPUserFrame.Header.curGP:SetText("GP")
+
+    EPGPUserFrame.Header.changeGP = CreateFrame("EditBox", nil, EPGPUserFrame.Header, "InputBoxTemplate")
+    EPGPUserFrame.Header.changeGP:SetSize(30, 25)
+    EPGPUserFrame.Header.changeGP:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.curGP, "BOTTOMRIGHT", 10, 0)
+    EPGPUserFrame.Header.changeGP:SetAutoFocus(false)
+    EPGPUserFrame.Header.changeGP:SetFrameStrata("HIGH")
+    EPGPUserFrame.Header.changeGP:SetText(0)
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton")
     EPGPUserFrameCloseButton:SetSize(25, 25)
@@ -261,10 +412,12 @@ function TBCEPGP:CreateFrameStuffs()
     AddToDataBaseButton:SetPoint("TOPLEFT", EPGPUserFrame, "TOPLEFT", 2, -2)
     AddToDataBaseButton:SetScript("OnClick",
     function()
+        local players = TBCEPGP.DataTable.Players
         local unitGUID = UnitGUID("Target")
         local unitName = UnitName("Target")
-        TBCEPGP:AddPlayerToList(unitGUID, unitName)
-        --TBCEPGP:FillUserFrameScrollPanel(scrollPanel)
+        local unitClass = UnitClass("Target")
+        TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
+        TBCEPGP:FillUserFrameScrollPanel(players)
     end)
     AddToDataBaseButton.text = AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
     AddToDataBaseButton.text:SetPoint("CENTER", 0, -1)
@@ -282,8 +435,21 @@ function TBCEPGP:CreateFrameStuffs()
     SyncButton.text:SetPoint("CENTER", 0, -1)
     SyncButton.text:SetText("Sync\nNow")
 
+    local SortButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    SortButton:SetSize(50, 30)
+    SortButton:SetPoint("LEFT", SyncButton, "RIGHT", 10, 0)
+    SortButton:SetScript("OnClick",
+    function()
+        local players = TBCEPGPDataTable.Players
+        sortedColumn = "Class"
+        TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+    end)
+    SortButton.text = SortButton:CreateFontString("SortButton", "ARTWORK", "GameFontNormalTiny")
+    SortButton.text:SetPoint("CENTER", 0, -1)
+    SortButton.text:SetText("Sort\nClasses")
+
     local scrollFrame = CreateFrame("ScrollFrame", "scrollFrame", EPGPUserFrame, "UIPanelScrollFrameTemplate, BackdropTemplate");
-    scrollFrame:SetSize(EPGPUserFrame:GetWidth() - 30, EPGPUserFrame:GetHeight() - 40)
+    scrollFrame:SetSize(EPGPUserFrame:GetWidth() - 30, EPGPUserFrame:GetHeight() - 140)
     scrollFrame:SetPoint("BOTTOM", -10, 5)
     scrollFrame:SetBackdrop({
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -296,83 +462,89 @@ function TBCEPGP:CreateFrameStuffs()
     scrollPanel:SetSize(scrollFrame:GetWidth(), 300)
     scrollPanel:SetPoint("TOP")
 
-    TBCEPGP:FillUserFrameScrollPanel(scrollPanel)
+    local players = TBCEPGP.DataTable.Players
+    TBCEPGP:FillUserFrameScrollPanel(players)
     scrollFrame:SetScrollChild(scrollPanel)
 end
 
-function TBCEPGP:FillUserFrameScrollPanel(panel)
-    local players = TBCEPGP.DataTable.Players
+function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
+    local players = inputPlayers
     local index = 1
+
+    if inputPlayers == nil then players = TBCEPGP.DataTable.Players end
+
+    for _, value in ipairs(playerFrames) do
+        value:Hide()
+    end
 
     for key, value in pairs(players) do
         local curPlayerFrame = playerFrames[index]
-        curPlayerFrame = CreateFrame("Frame", nil, scrollPanel, "BackdropTemplate")
-        curPlayerFrame:SetSize(scrollPanel:GetWidth(), 25)
-        curPlayerFrame:SetPoint("TOPLEFT", scrollPanel, "TOPLEFT", 0, -24 * index + 24)
-        curPlayerFrame:EnableMouse(true)
-        curPlayerFrame:SetBackdrop({
-            bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-            edgeSize = 12,
-            insets = {left = 2, right = 2, top = 2, bottom = 2},
-        })
-        curPlayerFrame:SetBackdropColor(1, 1, 1, 0.80)
+        if curPlayerFrame == nil then
+            curPlayerFrame = CreateFrame("Frame", nil, scrollPanel, "BackdropTemplate")
+            playerFrames[index] = curPlayerFrame
+            curPlayerFrame:SetSize(scrollPanel:GetWidth(), 25)
+            curPlayerFrame:SetPoint("TOPLEFT", scrollPanel, "TOPLEFT", 0, -24 * index + 24)
+            curPlayerFrame:EnableMouse(true)
+            curPlayerFrame:SetBackdrop({
+                bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                edgeSize = 12,
+                insets = {left = 2, right = 2, top = 2, bottom = 2},
+            })
+            curPlayerFrame:SetBackdropColor(1, 1, 1, 0.80)
 
-        curPlayerFrame.Name = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-        curPlayerFrame.Name:SetSize(100, 25)
-        curPlayerFrame.Name:SetPoint("LEFT", 5, 0)
+            curPlayerFrame.Name = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.Name:SetSize(100, 25)
+            curPlayerFrame.Name:SetPoint("LEFT", 5, 0)
 
-        curPlayerFrame.Class = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-        curPlayerFrame.Class:SetSize(100, 25)
-        curPlayerFrame.Class:SetPoint("LEFT", curPlayerFrame.Name, "RIGHT", 0, 0)
+            curPlayerFrame.Class = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.Class:SetSize(100, 25)
+            curPlayerFrame.Class:SetPoint("LEFT", curPlayerFrame.Name, "RIGHT", 0, 0)
 
-        curPlayerFrame.curEP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-        curPlayerFrame.curEP:SetSize(25, 25)
-        curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", 10, 0)
+            curPlayerFrame.curEP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.curEP:SetSize(50, 25)
+            curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", 10, 0)
 
-        curPlayerFrame.changeEP = CreateFrame("EditBox", nil, scrollPanel, "InputBoxTemplate")
-        curPlayerFrame.changeEP:SetSize(30, 25)
-        curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", 10, 0)
-        curPlayerFrame.changeEP:SetAutoFocus(false)
-        curPlayerFrame.changeEP:SetFrameStrata("HIGH")
-        
-        curPlayerFrame.curGP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-        curPlayerFrame.curGP:SetSize(25, 25)
-        curPlayerFrame.curGP:SetPoint("LEFT", curPlayerFrame.changeEP, "RIGHT", 25, 0)
+            curPlayerFrame.changeEP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
+            curPlayerFrame.changeEP:SetSize(30, 25)
+            curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", 10, 0)
+            curPlayerFrame.changeEP:SetAutoFocus(false)
+            curPlayerFrame.changeEP:SetFrameStrata("HIGH")
 
-        curPlayerFrame.changeGP = CreateFrame("EditBox", nil, scrollPanel, "InputBoxTemplate")
-        curPlayerFrame.changeGP:SetSize(30, 25)
-        curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", 10, 0)
-        curPlayerFrame.changeGP:SetAutoFocus(false)
-        curPlayerFrame.changeGP:SetFrameStrata("HIGH")
+            curPlayerFrame.curGP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.curGP:SetSize(50, 25)
+            curPlayerFrame.curGP:SetPoint("LEFT", curPlayerFrame.changeEP, "RIGHT", 25, 0)
 
-        local curName, curClass, curEP, curGP = nil
-
-        if index == 1 then
-            curName = "Name"
-            curClass = "Class"
-            curEP = "EP"
-            curGP = "GP"
-        else
-            curName = value.Name
-            curClass = value.Class
-            curEP = value.EP
-            curGP = value.GP
+            curPlayerFrame.changeGP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
+            curPlayerFrame.changeGP:SetSize(30, 25)
+            curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", 10, 0)
+            curPlayerFrame.changeGP:SetAutoFocus(false)
+            curPlayerFrame.changeGP:SetFrameStrata("HIGH")
 
             curPlayerFrame.changeEP:HookScript("OnEditFocusLost",
             function()
-                players[key].EP = players[key].EP + tonumber(curPlayerFrame.changeEP:GetText())
-                curPlayerFrame.curEP:SetText(value.EP)
+                players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + tonumber(curPlayerFrame.changeEP:GetText())
+                curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
             end)
 
             curPlayerFrame.changeGP:HookScript("OnEditFocusLost",
             function()
-                players[key].GP = players[key].GP + tonumber(curPlayerFrame.changeGP:GetText())
-                curPlayerFrame.curGP:SetText(value.GP)
+                players[curPlayerFrame.key].GP = players[curPlayerFrame.key].GP + tonumber(curPlayerFrame.changeGP:GetText())
+                curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
             end)
         end
+
+        local curName, curClass, curEP, curGP = nil, nil, nil, nil
+        curPlayerFrame.key = key
+
+        curName = value.Name
+        curClass = value.Class
+        curEP = value.EP
+        curGP = value.GP
+
+        curPlayerFrame:Show()
 
         curPlayerFrame.Name:SetText(curName)
         curPlayerFrame.Class:SetText(curClass)
@@ -388,6 +560,14 @@ function TBCEPGP:FillUserFrameScrollPanel(panel)
         -- UIPanelScrollUpButtonTemplate
         -- UIPanelScrollDownButtonTemplate
     end
+
+    if sortedColumn ~= nil then
+        table.sort(playerFrames, function(a, b)
+            if sortedColumn == "Class" then
+                return a.Class:GetText() > b.Class:GetText()
+            end
+        end)
+    end
 end
 
 function TBCEPGP.events:EncounterStart()
@@ -396,8 +576,9 @@ function TBCEPGP.events:EncounterStart()
     for i = 1, 40 do
         local curGUID = UnitGUID("Raid" .. i)
         local curName = UnitName("Raid" .. i)
+        local curClass = UnitClass("Raid" .. i)
         if players[curGUID] == nil then
-            TBCEPGP:AddPlayerToList(curGUID, curName)
+            TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
         end
     end
 end
@@ -416,9 +597,24 @@ end
 TBCEPGP.SlashCommands["add"] = function(value)
     local curGUID = UnitGUID("Target")
     local curName = UnitName("Target")
-    TBCEPGP:AddPlayerToList(curGUID, curName)
+    local curClass = UnitClass("Target")
+    TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
 end
 
 TBCEPGP.SlashCommands["show"] = function(value)
     EPGPUserFrame:Show()
 end
+
+--[[
+
+    dr = Druid
+    pa = Paladin
+    hu = Hunter
+    sh = Shaman
+    wa = Warrior
+    ro = Rogue
+    pr = Priest
+    ma = Mage
+    wl = warlock
+
+]]
