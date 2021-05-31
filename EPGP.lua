@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.events = {}
-TBCEPGP.Version = 6
+TBCEPGP.Version = 8
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel = nil, nil, nil, nil
@@ -11,28 +11,28 @@ local addonLoaded, variablesLoaded = false, false
 
 local classNumbers =
 {
-    [1] = {"Priest", "Pr",},
-    [2] = {"Warlock", "Wl",},
-    [3] = {"Mage", "Ma",},
-    [4] = {"Druid", "Dr",},
-    [5] = {"Rogue", "Ro",},
-    [6] = {"Shaman", "Sh",},
-    [7] = {"Hunter", "Hu",},
-    [8] = {"Warrior", "Wa",},
-    [9] = {"Paladin", "Pa",},
+     [1] = {"Warrior", "Wa",},
+     [2] = {"Paladin", "Pa",},
+     [3] = {"Hunter", "Hu",},
+     [4] = {"Rogue", "Ro",},
+     [5] = {"Priest", "Pr",},
+     [7] = {"Shaman", "Sh",},
+     [8] = {"Mage", "Ma",},
+     [9] = {"Warlock", "Wl",},
+    [11] = {"Druid", "Dr",},
 }
 
 local filteredClasses =
 {
-    ["Priest"] = false,
-    ["Warlock"] = false,
-    ["Mage"] = false,
-    ["Druid"] = false,
-    ["Rogue"] = false,
-    ["Shaman"] = false,
-    ["Hunter"] = false,
-    ["Warrior"] = false,
-    ["Paladin"] = false,
+     [1] = false,
+     [2] = false,
+     [3] = false,
+     [4] = false,
+     [5] = false,
+     [7] = false,
+     [8] = false,
+     [9] = false,
+    [11] = false,
 }
 
 function TBCEPGP:OnLoad()
@@ -318,64 +318,60 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.Class:SetText("Class")
 
     local FilterButtons = {}
-    for i = 1, 9 do
-        FilterButtons[i] = CreateFrame("Button", nil, EPGPUserFrame.Header, "BackdropTemplate")
-        FilterButtons[i]:SetSize(20, 16)
+    for i = 1, 11 do
+        if i == 6 or i == 10 then -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
+        else
+            FilterButtons[i] = CreateFrame("Button", nil, EPGPUserFrame.Header, "BackdropTemplate")
+            FilterButtons[i]:SetSize(20, 16)
 
-        local xOff, yOff = nil, nil
-        if i == 1 or i == 4 or i == 7 then
-            xOff = -18
-        elseif i == 2 or i == 5 or i == 8 then
-            xOff = -0
-        elseif i == 3 or i == 6 or i == 9 then
-            xOff = 18
-        end
-        if i == 1 or i == 2 or i == 3 then
-            yOff = 13
-        elseif i == 4 or i == 5 or i == 6 then
-            yOff = 0
-        elseif i == 7 or i == 8 or i == 9 then
-            yOff = -13
-        end
-
-        FilterButtons[i]:SetPoint("LEFT", EPGPUserFrame.Header.Class, "RIGHT", -60 + xOff, 30 + yOff)
-
-        FilterButtons[i]:SetBackdrop({
-            bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-            edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-            edgeSize = 10,
-            insets = {left = 3, right = 3, top = 3, bottom = 3},
-        })
-
-        local r, g = 1, 0
-        FilterButtons[i]:SetBackdropColor(1, 0, 0, 1)
-
-        FilterButtons[i]:SetScript("OnClick",
-        function()
-            print("FilterButton", i, "clicked!", filteredClasses[classNumbers[i][1]])
-            if filteredClasses[classNumbers[i][1]] then
-                filteredClasses[classNumbers[i][1]] = false
-                r = 1
-                g = 0
-            else
-                filteredClasses[classNumbers[i][1]] = true
-                r = 0
-                g = 1
+            local xOff, yOff = nil, nil
+            if i == 1 or i == 4 or i == 8 then
+                xOff = -18
+            elseif i == 2 or i == 5 or i == 9 then
+                xOff = -0
+            elseif i == 3 or i == 7 or i == 11 then
+                xOff = 18
             end
-            local players = TBCEPGPDataTable.Players
-            filteredPlayers = {}
-            for key, value in pairs(players) do
-                if filteredClasses[value.Class] then
-                    filteredPlayers[key] = value
-                    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+            if i == 1 or i == 2 or i == 3 then
+                yOff = 13
+            elseif i == 4 or i == 5 or i == 7 then
+                yOff = 0
+            elseif i == 8 or i == 9 or i == 11 then
+                yOff = -13
+            end
+
+            FilterButtons[i]:SetPoint("LEFT", EPGPUserFrame.Header.Class, "RIGHT", -60 + xOff, 30 + yOff)
+
+            FilterButtons[i]:SetBackdrop({
+                bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                edgeSize = 10,
+                insets = {left = 3, right = 3, top = 3, bottom = 3},
+            })
+
+            local r, g = 1, 0
+            FilterButtons[i]:SetBackdropColor(1, 0, 0, 1)
+
+            FilterButtons[i]:SetScript("OnClick",
+            function()
+                print("FilterButton", i, "clicked!", filteredClasses[i])
+                if filteredClasses[i] then
+                    filteredClasses[i] = false
+                    r = 1
+                    g = 0
+                else
+                    filteredClasses[i] = true
+                    r = 0
+                    g = 1
                 end
-            end
-            FilterButtons[i]:SetBackdropColor(r, g, 0, 1)
-        end)
+                TBCEPGP:filterPlayers(i)
+                FilterButtons[i]:SetBackdropColor(r, g, 0, 1)
+            end)
 
-        FilterButtons[i].text = FilterButtons[i]:CreateFontString("FilterButton", "ARTWORK", "GameFontNormalTiny")
-        FilterButtons[i].text:SetPoint("CENTER", 0, 0)
-        FilterButtons[i].text:SetText(classNumbers[i][2])
+            FilterButtons[i].text = FilterButtons[i]:CreateFontString("FilterButton", "ARTWORK", "GameFontNormalTiny")
+            FilterButtons[i].text:SetPoint("CENTER", 0, 0)
+            FilterButtons[i].text:SetText(classNumbers[i][2])
+        end
     end
 
     EPGPUserFrame.Header.curEP = EPGPUserFrame.Header:CreateFontString("EPGPUserFrame.Header", "ARTWORK", "GameFontNormal")
@@ -415,7 +411,7 @@ function TBCEPGP:CreateUserFrame()
         local players = TBCEPGP.DataTable.Players
         local unitGUID = UnitGUID("Target")
         local unitName = UnitName("Target")
-        local unitClass = UnitClass("Target")
+        local _, _, unitClass = UnitClass("Target")
         TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
         TBCEPGP:FillUserFrameScrollPanel(players)
     end)
@@ -467,13 +463,32 @@ function TBCEPGP:CreateUserFrame()
     scrollFrame:SetScrollChild(scrollPanel)
 end
 
+function TBCEPGP:filterPlayers()
+    filteredPlayers = {}
+    local players = TBCEPGPDataTable.Players
+    for key, value in pairs(players) do
+        for i = 1, 11 do
+            if i == 6 or i == 10 then -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
+            else
+                if filteredClasses[i] == true then
+                    if players[key].Class == i then
+                        filteredPlayers[key] = value
+                    end
+                end
+            end
+        end
+    end
+    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+end
+
 function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     local players = inputPlayers
+    local filteredPlayerFrames = {}
     local index = 1
 
     if inputPlayers == nil then players = TBCEPGP.DataTable.Players end
 
-    for _, value in ipairs(playerFrames) do
+    for _, value in pairs(playerFrames) do
         value:Hide()
     end
 
@@ -536,6 +551,8 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
             end)
         end
 
+        filteredPlayerFrames[index] = curPlayerFrame
+
         local curName, curClass, curEP, curGP = nil, nil, nil, nil
         curPlayerFrame.key = key
 
@@ -547,7 +564,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curPlayerFrame:Show()
 
         curPlayerFrame.Name:SetText(curName)
-        curPlayerFrame.Class:SetText(curClass)
+        curPlayerFrame.Class:SetText(classNumbers[curClass][1])
         curPlayerFrame.curEP:SetText(curEP)
         curPlayerFrame.curGP:SetText(curGP)
         curPlayerFrame.changeEP:SetText(0)
@@ -562,11 +579,18 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     end
 
     if sortedColumn ~= nil then
-        table.sort(playerFrames, function(a, b)
+        table.sort(filteredPlayerFrames, function(a, b)
+            --if a:IsShown() == false then print("a:IsShown() == false", a.Name:GetText(), "-", a.Class:GetText()) return false end
+            --if b:IsShown() == false then print("b:IsShown() == false", b.Name:GetText(), "-", b.Class:GetText()) return false end
             if sortedColumn == "Class" then
-                return a.Class:GetText() > b.Class:GetText()
+                print(a.key, players[a.key])
+                return players[a.key].Class > players[b.key].Class
             end
         end)
+    end
+
+    for j, frame in pairs(filteredPlayerFrames) do
+        frame:SetPoint("TOPLEFT", scrollPanel, "TOPLEFT", 0, -24 * j + 24)
     end
 end
 
@@ -576,7 +600,7 @@ function TBCEPGP.events:EncounterStart()
     for i = 1, 40 do
         local curGUID = UnitGUID("Raid" .. i)
         local curName = UnitName("Raid" .. i)
-        local curClass = UnitClass("Raid" .. i)
+        local _, _, curClass = UnitClass("Raid" .. i)
         if players[curGUID] == nil then
             TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
         end
@@ -597,24 +621,10 @@ end
 TBCEPGP.SlashCommands["add"] = function(value)
     local curGUID = UnitGUID("Target")
     local curName = UnitName("Target")
-    local curClass = UnitClass("Target")
+    local _, _, curClass = UnitClass("Target")
     TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
 end
 
 TBCEPGP.SlashCommands["show"] = function(value)
     EPGPUserFrame:Show()
 end
-
---[[
-
-    dr = Druid
-    pa = Paladin
-    hu = Hunter
-    sh = Shaman
-    wa = Warrior
-    ro = Rogue
-    pr = Priest
-    ma = Mage
-    wl = warlock
-
-]]
