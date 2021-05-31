@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.events = {}
-TBCEPGP.Version = 8
+TBCEPGP.Version = 9
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel = nil, nil, nil, nil
@@ -266,10 +266,8 @@ end
 
 function TBCEPGP:VarsAndAddonLoaded()
     if TBCEPGPDataTable == nil then
-        print("TBCEPGPDataTable == nil")
         TBCEPGPDataTable = TBCEPGP.DataTable
     elseif TBCEPGPDataTable ~= nil then
-        print("TBCEPGPDataTable == not nil")
         TBCEPGP.DataTable = TBCEPGPDataTable
     end
     TBCEPGP.CreateUserFrame()
@@ -354,7 +352,6 @@ function TBCEPGP:CreateUserFrame()
 
             FilterButtons[i]:SetScript("OnClick",
             function()
-                print("FilterButton", i, "clicked!", filteredClasses[i])
                 if filteredClasses[i] then
                     filteredClasses[i] = false
                     r = 1
@@ -580,10 +577,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
     if sortedColumn ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            --if a:IsShown() == false then print("a:IsShown() == false", a.Name:GetText(), "-", a.Class:GetText()) return false end
-            --if b:IsShown() == false then print("b:IsShown() == false", b.Name:GetText(), "-", b.Class:GetText()) return false end
             if sortedColumn == "Class" then
-                print(a.key, players[a.key])
                 return players[a.key].Class > players[b.key].Class
             end
         end)
