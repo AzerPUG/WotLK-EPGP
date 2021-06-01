@@ -270,7 +270,24 @@ function TBCEPGP:VarsAndAddonLoaded()
     elseif TBCEPGPDataTable ~= nil then
         TBCEPGP.DataTable = TBCEPGPDataTable
     end
+
+    TBCEPGP:TempDataChanger()
+
     TBCEPGP.CreateUserFrame()
+end
+
+function TBCEPGP:TempDataChanger()
+    for key, value in pairs(TBCEPGP.DataTable.Players) do
+        if TBCEPGP.DataTable.Players[key].Class == "Warrior" then TBCEPGP.DataTable.Players[key].Class = 1 end
+        if TBCEPGP.DataTable.Players[key].Class == "Paladin" then TBCEPGP.DataTable.Players[key].Class = 2 end
+        if TBCEPGP.DataTable.Players[key].Class == "Hunter" then TBCEPGP.DataTable.Players[key].Class = 3 end
+        if TBCEPGP.DataTable.Players[key].Class == "Rogue" then TBCEPGP.DataTable.Players[key].Class = 4 end
+        if TBCEPGP.DataTable.Players[key].Class == "Priest" then TBCEPGP.DataTable.Players[key].Class = 5 end
+        if TBCEPGP.DataTable.Players[key].Class == "Shaman" then TBCEPGP.DataTable.Players[key].Class = 7 end
+        if TBCEPGP.DataTable.Players[key].Class == "Mage" then TBCEPGP.DataTable.Players[key].Class = 8 end
+        if TBCEPGP.DataTable.Players[key].Class == "Warlock" then TBCEPGP.DataTable.Players[key].Class = 9 end
+        if TBCEPGP.DataTable.Players[key].Class == "Druid" then TBCEPGP.DataTable.Players[key].Class = 11 end
+    end
 end
 
 function TBCEPGP:CreateUserFrame()
@@ -382,6 +399,7 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.changeEP:SetAutoFocus(false)
     EPGPUserFrame.Header.changeEP:SetFrameStrata("HIGH")
     EPGPUserFrame.Header.changeEP:SetText(0)
+    EPGPUserFrame.Header.changeEP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("EP") end)
 
     EPGPUserFrame.Header.curGP = EPGPUserFrame.Header:CreateFontString("EPGPUserFrame.Header", "ARTWORK", "GameFontNormal")
     EPGPUserFrame.Header.curGP:SetSize(50, 25)
@@ -394,6 +412,7 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.changeGP:SetAutoFocus(false)
     EPGPUserFrame.Header.changeGP:SetFrameStrata("HIGH")
     EPGPUserFrame.Header.changeGP:SetText(0)
+    EPGPUserFrame.Header.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton")
     EPGPUserFrameCloseButton:SetSize(25, 25)
@@ -433,7 +452,6 @@ function TBCEPGP:CreateUserFrame()
     SortButton:SetPoint("LEFT", SyncButton, "RIGHT", 10, 0)
     SortButton:SetScript("OnClick",
     function()
-        local players = TBCEPGPDataTable.Players
         sortedColumn = "Class"
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
     end)
@@ -458,6 +476,19 @@ function TBCEPGP:CreateUserFrame()
     local players = TBCEPGP.DataTable.Players
     TBCEPGP:FillUserFrameScrollPanel(players)
     scrollFrame:SetScrollChild(scrollPanel)
+end
+
+function TBCEPGP:MassChange(Points)
+    local PointsChange = tonumber(EPGPUserFrame.Header["change" .. Points]:GetText())
+    if PointsChange ~= nil then
+        local players = TBCEPGPDataTable.Players
+        if filteredPlayers == nil then filteredPlayers = players end
+        for key, _ in pairs(filteredPlayers) do
+            players[key][Points] = players[key][Points] + PointsChange
+        end
+        EPGPUserFrame.Header["change" .. Points]:SetText(0)
+        TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+    end
 end
 
 function TBCEPGP:filterPlayers()
