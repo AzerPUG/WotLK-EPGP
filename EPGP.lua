@@ -194,7 +194,9 @@ function TBCEPGP:SyncRaidersAddOnMsg()
     local players = TBCEPGPDataTable.Players
     for playerGUID, playerData in pairs(players) do
         local message = "Player:"
-        message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.EP .. ":" .. playerData.GP
+        if playerData.EP == nil then playerData.EP = 0 end
+        if playerData.GP == nil then playerData.GP = 0 end
+        message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
         if IsInRaid() then
             C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"RAID", 1)
         else
@@ -213,7 +215,7 @@ function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
     if sender == playerName .. "-" .. playerServer then print("Received Own AddOn Message!")
     else
         if prefix == "TBCEPGP" then
-            for i = 1, 5 do
+            for i = 1, 6 do
                 if subPayload ~= nil then
                     subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
                     local stringFind = string.find(subPayload, ":", 1)
@@ -222,27 +224,35 @@ function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
                     end
                 end
                 subStringList[3] = tonumber(subStringList[3])
+                subStringList[4] = tonumber(subStringList[4])
+                subStringList[5] = tonumber(subStringList[5])
+                subStringList[6] = tonumber(subStringList[6])
             end
-            print("Sync Received from:", sender)
 
-            for player, playerData in pairs(players) do
-                if players[subStringList[1]] == nil then
-                    local curGUID = subStringList[1]
-                    players[curGUID] = {}
+            if players[subStringList[1]] == nil then
+                local curGUID = subStringList[1]
+                players[curGUID] = {}
+                players[curGUID].Name = subStringList[2]
+                players[curGUID].Update = subStringList[3]
+                players[curGUID].Class = subStringList[4]
+                players[curGUID].EP = subStringList[5]
+                players[curGUID].GP = subStringList[6]
+            else
+                local curGUID = subStringList[1]
+                if players[curGUID].Update < subStringList[3] then
                     players[curGUID].Name = subStringList[2]
                     players[curGUID].Update = subStringList[3]
-                    players[curGUID].EP = subStringList[4]
-                    players[curGUID].GP = subStringList[5]
-                else
-                    if playerData.Update < subStringList[3] then
-                        local curGUID = subStringList[1]
-                        players[curGUID].Name = subStringList[2]
-                        players[curGUID].Update = subStringList[3]
-                        players[curGUID].EP = subStringList[4]
-                        players[curGUID].GP = subStringList[5]
-                    end
+                    players[curGUID].Class = subStringList[4]
+                    players[curGUID].EP = subStringList[5]
+                    players[curGUID].GP = subStringList[6]
                 end
             end
+            for _, value in pairs(players) do
+                if value.EP == nil then value.EP = 0 end
+                if value.GP == nil then value.GP = 0 end
+            end
+            TBCEPGPDataTable.Players = players
+            TBCEPGP:FillUserFrameScrollPanel(players)
         end
     end
 end
@@ -485,6 +495,7 @@ function TBCEPGP:MassChange(Points)
         if filteredPlayers == nil then filteredPlayers = players end
         for key, _ in pairs(filteredPlayers) do
             players[key][Points] = players[key][Points] + PointsChange
+            players[key].Update = time()
         end
         EPGPUserFrame.Header["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
@@ -506,6 +517,14 @@ function TBCEPGP:filterPlayers()
             end
         end
     end
+    local allFiltersOff = true
+    for i = 1, 11 do
+        if i == 6 or i == 10 then
+        else
+            if filteredClasses[i] == true then allFiltersOff = false end
+        end
+    end
+    if allFiltersOff == true then filteredPlayers = players end
     TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
 end
 
