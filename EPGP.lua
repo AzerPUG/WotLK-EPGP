@@ -208,12 +208,13 @@ end
 
 function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
     local playerName = UnitName("player")
-    local playerServer = GetRealmName()
     local subPayload = payload
     local players = TBCEPGPDataTable.Players
     local subStringList = {}
-    if sender == playerName .. "-" .. playerServer then print("Received Own AddOn Message!")
+    sender = string.match(sender, "(.*)-")
+    if sender == playerName then print("Received Own AddOn Message!")
     else
+        print("Received Sync from", sender)
         if prefix == "TBCEPGP" then
             for i = 1, 6 do
                 if subPayload ~= nil then
@@ -493,9 +494,9 @@ function TBCEPGP:MassChange(Points)
     if PointsChange ~= nil then
         local players = TBCEPGPDataTable.Players
         if filteredPlayers == nil then filteredPlayers = players end
-        for key, _ in pairs(filteredPlayers) do
-            players[key][Points] = players[key][Points] + PointsChange
-            players[key].Update = time()
+        for key, value in pairs(filteredPlayers) do
+            value[Points] = value[Points] + PointsChange
+            value.Update = time()
         end
         EPGPUserFrame.Header["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
