@@ -84,7 +84,11 @@ end
 function TBCEPGP:GetDateTime()
     local DateTimeString = date()
     local year, month, date, day, time = nil, nil, nil, nil, nil
-    day, month, date, time, year = strsplit(" ", DateTimeString)
+    if string.find(DateTimeString, "  ") then
+        day, month, _, date, time, year = strsplit(" ", DateTimeString)
+    else
+        day, month, date, time, year = strsplit(" ", DateTimeString)
+    end
     day = TBCEPGP:GetFullDayName(day)
     month = TBCEPGP:GetNumericMonth(month)
     date = tonumber(date)
