@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.events = {}
-TBCEPGP.Version = 11
+TBCEPGP.Version = 12
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel = nil, nil, nil, nil
@@ -207,57 +207,64 @@ function TBCEPGP:SyncRaidersAddOnMsg()
             C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"GUILD", 1)
         end
     end
+    if IsInRaid() then
+        C_ChatInfo.SendAddonMessage("TBCEPGP", "EndOfSync" ,"RAID", 1)
+    else
+        C_ChatInfo.SendAddonMessage("TBCEPGP", "EndOfSync" ,"GUILD", 1)
+    end
     print("Sync AddOn Messages Send!")
 end
 
 function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
-    local playerName = UnitName("player")
-    local subPayload = payload
-    local players = TBCEPGPDataTable.Players
-    local subStringList = {}
-    sender = string.match(sender, "(.*)-")
-    if sender == playerName then print("Received Own AddOn Message!")
-    else
-        print("Received Sync from", sender)
-        if prefix == "TBCEPGP" then
-            for i = 1, 6 do
-                if subPayload ~= nil then
-                    subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
-                    local stringFind = string.find(subPayload, ":", 1)
-                    if stringFind ~= nil then
-                        subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
-                    end
-                end
-                subStringList[3] = tonumber(subStringList[3])
-                subStringList[4] = tonumber(subStringList[4])
-                subStringList[5] = tonumber(subStringList[5])
-                subStringList[6] = tonumber(subStringList[6])
-            end
-
-            if players[subStringList[1]] == nil then
-                local curGUID = subStringList[1]
-                players[curGUID] = {}
-                players[curGUID].Name = subStringList[2]
-                players[curGUID].Update = subStringList[3]
-                players[curGUID].Class = subStringList[4]
-                players[curGUID].EP = subStringList[5]
-                players[curGUID].GP = subStringList[6]
+    if prefix == "TBCEPGP" then
+        local playerName = UnitName("player")
+        local subPayload = payload
+        local players = TBCEPGPDataTable.Players
+        local subStringList = {}
+        sender = string.match(sender, "(.*)-")
+        if sender == playerName then
+        else
+            if payload == "EndOfSync" then print("Sync Received from", sender)
             else
-                local curGUID = subStringList[1]
-                if players[curGUID].Update < subStringList[3] then
+                for i = 1, 6 do
+                    if subPayload ~= nil then
+                        subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
+                        local stringFind = string.find(subPayload, ":", 1)
+                        if stringFind ~= nil then
+                            subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
+                        end
+                    end
+                    subStringList[3] = tonumber(subStringList[3])
+                    subStringList[4] = tonumber(subStringList[4])
+                    subStringList[5] = tonumber(subStringList[5])
+                    subStringList[6] = tonumber(subStringList[6])
+                end
+
+                if players[subStringList[1]] == nil then
+                    local curGUID = subStringList[1]
+                    players[curGUID] = {}
                     players[curGUID].Name = subStringList[2]
                     players[curGUID].Update = subStringList[3]
                     players[curGUID].Class = subStringList[4]
                     players[curGUID].EP = subStringList[5]
                     players[curGUID].GP = subStringList[6]
+                else
+                    local curGUID = subStringList[1]
+                    if players[curGUID].Update < subStringList[3] then
+                        players[curGUID].Name = subStringList[2]
+                        players[curGUID].Update = subStringList[3]
+                        players[curGUID].Class = subStringList[4]
+                        players[curGUID].EP = subStringList[5]
+                        players[curGUID].GP = subStringList[6]
+                    end
                 end
+                for _, value in pairs(players) do
+                    if value.EP == nil then value.EP = 0 end
+                    if value.GP == nil then value.GP = 0 end
+                end
+                TBCEPGPDataTable.Players = players
+                TBCEPGP:FillUserFrameScrollPanel(players)
             end
-            for _, value in pairs(players) do
-                if value.EP == nil then value.EP = 0 end
-                if value.GP == nil then value.GP = 0 end
-            end
-            TBCEPGPDataTable.Players = players
-            TBCEPGP:FillUserFrameScrollPanel(players)
         end
     end
 end
@@ -324,7 +331,7 @@ function TBCEPGP:CreateUserFrame()
 
     EPGPUserFrame.Title = EPGPUserFrame:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalHuge")
     EPGPUserFrame.Title:SetPoint("TOP", 0, -10)
-    EPGPUserFrame.Title:SetText("|cFF00FFFF" .. AddOnName .. "|r")
+    EPGPUserFrame.Title:SetText("|cFF00FFFF" .. AddOnName .. " - v" .. TBCEPGP.Version .. "|r")
 
     EPGPUserFrame.Header = CreateFrame("Frame", nil, EPGPUserFrame, "BackdropTemplate")
     EPGPUserFrame.Header:SetPoint("TOP", -10, -85)
@@ -455,7 +462,7 @@ function TBCEPGP:CreateUserFrame()
     SyncButton:SetPoint("LEFT", AddToDataBaseButton, "RIGHT", 10, 0)
     SyncButton:SetScript("OnClick",
     function()
-        print("Trying to sync!")
+        print("Trying to sync...")
         TBCEPGP:SyncRaidersAddOnMsg()
     end)
     SyncButton.text = SyncButton:CreateFontString("SyncButton", "ARTWORK", "GameFontNormalTiny")
