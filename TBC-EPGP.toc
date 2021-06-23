@@ -3,6 +3,7 @@
 ## Author: Tex & AzerPUG Gaming Community (www.azerpug.com/discord)
 ## Notes: RubyBlaze smacked Tex in the face with a pile of money, out of spite, Tex casted 'CreateAddon' on RubyBlaze. It was very effective!
 ## SavedVariables: TBCEPGPDataTable
+## SavedVariablesPerCharacter: TBCEPGPAdminList
 
 SlashCommand.lua
 DataTables.lua

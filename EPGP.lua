@@ -1,12 +1,11 @@
 if TBCEPGP == nil then TBCEPGP = {} end
-TBCEPGP.events = {}
-TBCEPGP.Version = 12
+TBCEPGP.Events = {}
+TBCEPGP.Version = 14
 local AddOnName = "TBC-EPGP"
 
-local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel = nil, nil, nil, nil
+local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel, EPGPOptionsPanel = nil, nil, nil, nil, nil
 local playerFrames = {}
 local sortedColumn, filteredPlayers = nil, nil
-
 local addonLoaded, variablesLoaded = false, false
 
 local classNumbers =
@@ -39,10 +38,10 @@ function TBCEPGP:OnLoad()
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
 
     EventFrame = CreateFrame("Frame", nil, UIParent)
-    TBCEPGP:RegisterEvents("ENCOUNTER_START", function(...) TBCEPGP.events:EncounterStart(...) end)
-    TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.events:AddonLoaded(...) end)
-    TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.events:VariablesLoaded(...) end)
-    TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.events:ChatMsgAddon(...) end)
+    TBCEPGP:RegisterEvents("ENCOUNTER_START", function(...) TBCEPGP.Events:EncounterStart(...) end)
+    TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.Events:AddonLoaded(...) end)
+    TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.Events:VariablesLoaded(...) end)
+    TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.Events:ChatMsgAddon(...) end)
 
     EventFrame:SetScript("OnEvent", function(...)
         TBCEPGP:OnEvent(...)
@@ -69,6 +68,55 @@ function TBCEPGP:OnLoad()
     UpdateFrameCloseButton:SetScript("OnClick", function() UpdateFrame:Hide() end )
 
     UpdateFrame:Hide()
+
+    EPGPOptionsPanel = CreateFrame("FRAME", nil)
+    EPGPOptionsPanel.name = "TBC-EPGP"
+    InterfaceOptions_AddCategory(EPGPOptionsPanel)
+
+    EPGPOptionsPanel.header = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalHuge")
+    EPGPOptionsPanel.header:SetPoint("TOP", 0, -10)
+    EPGPOptionsPanel.header:SetText("|cFF00FFFFTBC EPGP Options!|r")
+
+    EPGPOptionsPanel.subheader = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+    EPGPOptionsPanel.subheader:SetPoint("TOP", 0, -35)
+    EPGPOptionsPanel.subheader:SetText("|cFF00FFFFBy AzerPUG and Punch&Pie!|r")
+
+    EPGPOptionsPanel.adminsEditBoxText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    EPGPOptionsPanel.adminsEditBoxText:SetSize(200, 25)
+    EPGPOptionsPanel.adminsEditBoxText:SetPoint("TOPLEFT", 25, -100)
+    EPGPOptionsPanel.adminsEditBoxText:SetText("Add Admins for Sync\n(multi-names split by a space)")
+
+    EPGPOptionsPanel.adminsEditBox = CreateFrame("EditBox", nil, EPGPOptionsPanel, "InputBoxTemplate")
+    EPGPOptionsPanel.adminsEditBox:SetSize(200, 25)
+    EPGPOptionsPanel.adminsEditBox:SetPoint("TOPLEFT", 25, -125)
+    EPGPOptionsPanel.adminsEditBox:SetAutoFocus(false)
+    EPGPOptionsPanel.adminsEditBox:SetScript("OnEditFocusLost", function() TBCEPGPAdminList = TBCEPGP:splitCharacterNames(EPGPOptionsPanel.adminsEditBox:GetText()) end)
+    EPGPOptionsPanel.adminsEditBox:SetScript("OnShow",
+    function()
+        local adminsToSet = ""
+    for i = 1, #TBCEPGPAdminList do
+        adminsToSet = TBCEPGPAdminList[i] .. " "
+    end
+    EPGPOptionsPanel.adminsEditBox:SetText(adminsToSet)
+    end)
+
+    EPGPOptionsPanel:Hide()
+end
+
+function TBCEPGP:splitCharacterNames(input)
+    local names = {}
+    local inputLen = #input
+    local index = 1
+    while index < inputLen do
+        local _, matchEnd = string.find(input, "%s?([^%s]+)%s?", index)
+        local assistName = string.match(input, "%s?([^%s]+)%s?", index)
+        index = matchEnd + 1
+        table.insert(names, assistName)
+    end
+    for i = 1, #names do
+        print(names[i])
+    end
+    return names
 end
 
 function TBCEPGP:RegisterEvents(event, func)
@@ -215,15 +263,22 @@ function TBCEPGP:SyncRaidersAddOnMsg()
     print("Sync AddOn Messages Send!")
 end
 
-function TBCEPGP.events:ChatMsgAddon(prefix, payload, channel, sender)
-    if prefix == "TBCEPGP" then
+function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
+    if prefix == "AZPVERSIONS" and sender ~= player then
+        local version = AZP.TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
+        if version ~= nil then
+            AZP.TBCEPGP:ReceiveVersion(version)
+        end
+    elseif prefix == "TBCEPGP" then
         local playerName = UnitName("player")
         local subPayload = payload
         local players = TBCEPGPDataTable.Players
         local subStringList = {}
         sender = string.match(sender, "(.*)-")
-        if sender == playerName then
-        else
+        print("TBC-EPGP Sync Received from:", sender)
+        if sender == "Wirepriest" then print("Wire <3") end
+        if tContains(TBCEPGPAdminList, sender) then print("Also Wire <3") end
+        if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
             if payload == "EndOfSync" then print("Sync Received from", sender)
             else
                 for i = 1, 6 do
@@ -275,14 +330,14 @@ function TBCEPGP:OnEvent(_, event, ...)
     end
 end
 
-function TBCEPGP.events:AddonLoaded(...)
+function TBCEPGP.Events:AddonLoaded(...)
     local addonName = ...
     if addonName == "TBC-EPGP" then
         if variablesLoaded == true then TBCEPGP:VarsAndAddonLoaded() else addonLoaded = true end
     end
 end
 
-function TBCEPGP.events:VariablesLoaded(...)
+function TBCEPGP.Events:VariablesLoaded(...)
     if addonLoaded == true then TBCEPGP:VarsAndAddonLoaded() else variablesLoaded = true end
 end
 
@@ -296,6 +351,69 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP:TempDataChanger()
 
     TBCEPGP.CreateUserFrame()
+end
+
+function TBCEPGP:DelayedExecution(delayTime, delayedFunction)
+    local frame = CreateFrame("Frame")
+    frame.start_time = GetServerTime()
+    frame:SetScript("OnUpdate",
+        function(self)
+            if GetServerTime() - self.start_time > delayTime then
+                delayedFunction()
+                self:SetScript("OnUpdate", nil)
+                self:Hide()
+            end
+        end
+    )
+    frame:Show()
+end
+
+function TBCEPGP:ShareVersion() -- Change DelayedExecution to native WoW Function.
+    local versionString = string.format("|TBCEPGP:%d|", TBCEPGP.Version)
+    TBCEPGP:DelayedExecution(10, function()
+        if UnitInBattleground("player") ~= nil then
+            -- BG stuff?
+        else
+            if IsInGroup() then
+                if IsInRaid() then
+                    C_ChatInfo.SendAddonMessage("TBCEPGPVerion", versionString ,"RAID", 1)
+                else
+                    C_ChatInfo.SendAddonMessage("TBCEPGPVerion", versionString ,"PARTY", 1)
+                end
+            end
+            if IsInGuild() then
+                C_ChatInfo.SendAddonMessage("TBCEPGPVerion", versionString ,"GUILD", 1)
+            end
+        end
+    end)
+end
+
+function TBCEPGP:ReceiveVersion(version)
+    if version > TBCEPGP.Version then
+        if (not HaveShowedUpdateNotification) then
+            HaveShowedUpdateNotification = true
+            UpdateFrame:Show()
+            UpdateFrame.text:SetText(
+                "Please download the new version through the CurseForge app.\n" ..
+                "Or use the CurseForge website to download it manually!\n\n" .. 
+                "Newer Version: v" .. version .. "\n" .. 
+                "Your version: v" .. TBCEPGP.Version
+            )
+        end
+    end
+end
+
+function TBCEPGP:GetSpecificAddonVersion(versionString, addonWanted)
+    local pattern = "|([A-Z]+):([0-9]+)|"
+    local index = 1
+    while index < #versionString do
+        local _, endPos = string.find(versionString, pattern, index)
+        local addon, version = string.match(versionString, pattern, index)
+        index = endPos + 1
+        if addon == addonWanted then
+            return tonumber(version)
+        end
+    end
 end
 
 function TBCEPGP:TempDataChanger()
@@ -322,16 +440,24 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame:SetScript("OnDragStart", EPGPUserFrame.StartMoving)
     EPGPUserFrame:SetScript("OnDragStop", EPGPUserFrame.StopMovingOrSizing)
     EPGPUserFrame:SetBackdrop({
-        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-        edgeSize = 12,
-        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+        bgFile = "Interface/DialogFrame/UI-DialogBox-Background",
+        edgeFile = "Interface/DialogFrame/UI-DialogBox-Border",
+        edgeSize = 36,
+        insets = { left = 5, right = 5, top = 5, bottom = 5 },
     })
-    EPGPUserFrame:SetBackdropColor(0.25, 0.25, 0.25, 0.80)
+    EPGPUserFrame:SetBackdropColor(1, 1, 1, 1)
 
-    EPGPUserFrame.Title = EPGPUserFrame:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalHuge")
-    EPGPUserFrame.Title:SetPoint("TOP", 0, -10)
-    EPGPUserFrame.Title:SetText("|cFF00FFFF" .. AddOnName .. " - v" .. TBCEPGP.Version .. "|r")
+    EPGPUserFrame.Title = CreateFrame("FRAME", nil, EPGPUserFrame)
+    EPGPUserFrame.Title:SetSize(300, 65)
+    EPGPUserFrame.Title:SetPoint("TOP", EPGPUserFrame, "TOP", 0, EPGPUserFrame.Title:GetHeight() * 0.25 - 4)
+
+    EPGPUserFrame.Title.Text = EPGPUserFrame.Title:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalLarge")
+    EPGPUserFrame.Title.Text:SetPoint("TOP", 0, -EPGPUserFrame.Title:GetHeight() * 0.25 + 4)
+    EPGPUserFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version
+)
+    EPGPUserFrame.Title.Texture = EPGPUserFrame.Title:CreateTexture(nil, "BACKGROUND")
+    EPGPUserFrame.Title.Texture:SetAllPoints()
+    EPGPUserFrame.Title.Texture:SetTexture("Interface/DialogFrame/UI-DialogBox-Header")
 
     EPGPUserFrame.Header = CreateFrame("Frame", nil, EPGPUserFrame, "BackdropTemplate")
     EPGPUserFrame.Header:SetPoint("TOP", -10, -85)
@@ -436,14 +562,14 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.changeGP:SetText(0)
     EPGPUserFrame.Header.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
 
-    local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton")
-    EPGPUserFrameCloseButton:SetSize(25, 25)
-    EPGPUserFrameCloseButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", 2, 2)
+    local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton, BackDropTemplate")
+    EPGPUserFrameCloseButton:SetSize(30, 30)
+    EPGPUserFrameCloseButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", -4, -4)
     EPGPUserFrameCloseButton:SetScript("OnClick", function() EPGPUserFrame:Hide() end)
 
     local AddToDataBaseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
     AddToDataBaseButton:SetSize(50, 30)
-    AddToDataBaseButton:SetPoint("TOPLEFT", EPGPUserFrame, "TOPLEFT", 2, -2)
+    AddToDataBaseButton:SetPoint("TOPLEFT", EPGPUserFrame, "TOPLEFT", 35, -10)
     AddToDataBaseButton:SetScript("OnClick",
     function()
         local players = TBCEPGP.DataTable.Players
@@ -457,21 +583,9 @@ function TBCEPGP:CreateUserFrame()
     AddToDataBaseButton.text:SetPoint("CENTER", 0, -1)
     AddToDataBaseButton.text:SetText("Add\nTarget")
 
-    local SyncButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
-    SyncButton:SetSize(50, 30)
-    SyncButton:SetPoint("LEFT", AddToDataBaseButton, "RIGHT", 10, 0)
-    SyncButton:SetScript("OnClick",
-    function()
-        print("Trying to sync...")
-        TBCEPGP:SyncRaidersAddOnMsg()
-    end)
-    SyncButton.text = SyncButton:CreateFontString("SyncButton", "ARTWORK", "GameFontNormalTiny")
-    SyncButton.text:SetPoint("CENTER", 0, -1)
-    SyncButton.text:SetText("Sync\nNow")
-
     local SortButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
     SortButton:SetSize(50, 30)
-    SortButton:SetPoint("LEFT", SyncButton, "RIGHT", 10, 0)
+    SortButton:SetPoint("LEFT", AddToDataBaseButton, "RIGHT", 10, 0)
     SortButton:SetScript("OnClick",
     function()
         sortedColumn = "Class"
@@ -480,6 +594,65 @@ function TBCEPGP:CreateUserFrame()
     SortButton.text = SortButton:CreateFontString("SortButton", "ARTWORK", "GameFontNormalTiny")
     SortButton.text:SetPoint("CENTER", 0, -1)
     SortButton.text:SetText("Sort\nClasses")
+
+    local DecayConfirmWindow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    DecayConfirmWindow:SetSize(300, 150)
+    DecayConfirmWindow:SetPoint("CENTER", 0, 200)
+    DecayConfirmWindow:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 3, right = 3, top = 3, bottom = 3},
+    })
+    DecayConfirmWindow:SetBackdropColor(1, 0, 0, 1)
+
+    DecayConfirmWindow.Header = DecayConfirmWindow:CreateFontString("DecayConfirmWindow", "ARTWORK", "GameFontNormalHuge")
+    DecayConfirmWindow.Header:SetSize(DecayConfirmWindow:GetWidth(), 25)
+    DecayConfirmWindow.Header:SetPoint("TOP", 0, -5)
+    DecayConfirmWindow.Header:SetText("|cFFFF0000WARNING!|r")
+
+    DecayConfirmWindow.WarningText = DecayConfirmWindow:CreateFontString("DecayConfirmWindow", "ARTWORK", "GameFontNormalLarge")
+    DecayConfirmWindow.WarningText:SetSize(DecayConfirmWindow:GetWidth(), 50)
+    DecayConfirmWindow.WarningText:SetPoint("TOP", DecayConfirmWindow.Header, "BOTTOM", 0, -10)
+    DecayConfirmWindow.WarningText:SetText("|cFFFF0000Are you sure you want to decay\nthe entire dataTable?\nThis can not be undone!|r")
+
+    DecayConfirmWindow.ConfirmButton = CreateFrame("Button", nil, DecayConfirmWindow, "UIPanelButtonTemplate")
+    DecayConfirmWindow.ConfirmButton:SetSize(75, 25)
+    DecayConfirmWindow.ConfirmButton:SetPoint("TOP", DecayConfirmWindow, "BOTTOM", -50, 35)
+    DecayConfirmWindow.ConfirmButton:SetText("Confirm")
+    DecayConfirmWindow.ConfirmButton:SetScript("OnClick", function() TBCEPGP:DecayDataTable() DecayConfirmWindow:Hide() end)
+
+    DecayConfirmWindow.CancelButton = CreateFrame("Button", nil, DecayConfirmWindow, "UIPanelButtonTemplate")
+    DecayConfirmWindow.CancelButton:SetSize(75, 25)
+    DecayConfirmWindow.CancelButton:SetPoint("TOP", DecayConfirmWindow, "BOTTOM", 50, 35)
+    DecayConfirmWindow.CancelButton:SetText("Cancel")
+    DecayConfirmWindow.CancelButton:SetScript("OnClick", function() DecayConfirmWindow:Hide() end)
+
+    DecayConfirmWindow:Hide()
+
+    local DecayButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    DecayButton:SetSize(50, 30)
+    DecayButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", -35, -10)
+    DecayButton:SetScript("OnClick",
+    function()
+        DecayConfirmWindow:Show()
+        print("DecayButtonPresssed!")
+    end)
+    DecayButton.text = DecayButton:CreateFontString("DecayButton", "ARTWORK", "GameFontNormalTiny")
+    DecayButton.text:SetPoint("CENTER", 0, -1)
+    DecayButton.text:SetText("Decay\nPlayers")
+
+    local SyncButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    SyncButton:SetSize(50, 30)
+    SyncButton:SetPoint("Right", DecayButton, "Left", -10, 0)
+    SyncButton:SetScript("OnClick",
+    function()
+        print("Trying to sync...")
+        TBCEPGP:SyncRaidersAddOnMsg()
+    end)
+    SyncButton.text = SyncButton:CreateFontString("SyncButton", "ARTWORK", "GameFontNormalTiny")
+    SyncButton.text:SetPoint("CENTER", 0, -1)
+    SyncButton.text:SetText("Sync\nNow")
 
     local scrollFrame = CreateFrame("ScrollFrame", "scrollFrame", EPGPUserFrame, "UIPanelScrollFrameTemplate, BackdropTemplate");
     scrollFrame:SetSize(EPGPUserFrame:GetWidth() - 30, EPGPUserFrame:GetHeight() - 140)
@@ -498,6 +671,14 @@ function TBCEPGP:CreateUserFrame()
     local players = TBCEPGP.DataTable.Players
     TBCEPGP:FillUserFrameScrollPanel(players)
     scrollFrame:SetScrollChild(scrollPanel)
+end
+
+function TBCEPGP:DecayDataTable()
+    local players = TBCEPGP.DataTable.Players
+    for key, value in pairs(players) do
+        value.GP = value.GP * 0.85
+        value.EP = value.EP * 0.85
+    end
 end
 
 function TBCEPGP:MassChange(Points)
@@ -598,6 +779,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
             curPlayerFrame.changeEP:HookScript("OnEditFocusLost",
             function()
                 players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + tonumber(curPlayerFrame.changeEP:GetText())
+                players[curPlayerFrame.key].Update = time()
                 curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
             end)
@@ -605,6 +787,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
             curPlayerFrame.changeGP:HookScript("OnEditFocusLost",
             function()
                 players[curPlayerFrame.key].GP = players[curPlayerFrame.key].GP + tonumber(curPlayerFrame.changeGP:GetText())
+                players[curPlayerFrame.key].Update = time()
                 curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
             end)
@@ -630,11 +813,6 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curPlayerFrame.changeGP:SetText(0)
 
         index = index + 1
-        -- ToDo Later Version:
-        -- Add Up and Down buttons to text box, to easily add/deduct x points.
-        -- Shift / Alt / CTRL + Click for other values.
-        -- UIPanelScrollUpButtonTemplate
-        -- UIPanelScrollDownButtonTemplate
     end
 
     if sortedColumn ~= nil then
@@ -650,7 +828,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     end
 end
 
-function TBCEPGP.events:EncounterStart()
+function TBCEPGP.Events:EncounterStart()
     local epoch = time()
     local players = TBCEPGP.DataTable.Players
     for i = 1, 40 do
