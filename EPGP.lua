@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 14
+TBCEPGP.Version = 15
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel, EPGPOptionsPanel = nil, nil, nil, nil, nil
@@ -36,6 +36,7 @@ local filteredClasses =
 
 function TBCEPGP:OnLoad()
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
+    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPVersion")
 
     EventFrame = CreateFrame("Frame", nil, UIParent)
     TBCEPGP:RegisterEvents("ENCOUNTER_START", function(...) TBCEPGP.Events:EncounterStart(...) end)
@@ -49,7 +50,7 @@ function TBCEPGP:OnLoad()
 
     UpdateFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     UpdateFrame:SetPoint("CENTER", 0, 250)
-    UpdateFrame:SetSize(250, 300)
+    UpdateFrame:SetSize(400, 100)
     UpdateFrame:SetBackdrop({
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -57,9 +58,14 @@ function TBCEPGP:OnLoad()
         insets = { left = 1, right = 1, top = 1, bottom = 1 },
     })
     UpdateFrame:SetBackdropColor(0.25, 0.25, 0.25, 0.80)
+
     UpdateFrame.header = UpdateFrame:CreateFontString("UpdateFrame", "ARTWORK", "GameFontNormalHuge")
     UpdateFrame.header:SetPoint("TOP", 0, -10)
     UpdateFrame.header:SetText("|cFFFF0000" .. AddOnName .. " out of date!|r")
+
+    UpdateFrame.text = UpdateFrame:CreateFontString("UpdateFrame", "ARTWORK", "GameFontNormal")
+    UpdateFrame.text:SetPoint("TOP", 0, -30)
+    UpdateFrame.text:SetText("-----")
 
     local UpdateFrameCloseButton = CreateFrame("Button", nil, UpdateFrame, "UIPanelCloseButton")
     UpdateFrameCloseButton:SetWidth(25)
@@ -94,10 +100,12 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.adminsEditBox:SetScript("OnShow",
     function()
         local adminsToSet = ""
-    for i = 1, #TBCEPGPAdminList do
-        adminsToSet = TBCEPGPAdminList[i] .. " "
-    end
-    EPGPOptionsPanel.adminsEditBox:SetText(adminsToSet)
+        if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
+            for i = 1, #TBCEPGPAdminList do
+                adminsToSet = TBCEPGPAdminList[i] .. " "
+            end
+            EPGPOptionsPanel.adminsEditBox:SetText(adminsToSet)
+        end
     end)
 
     EPGPOptionsPanel:Hide()
@@ -112,9 +120,6 @@ function TBCEPGP:splitCharacterNames(input)
         local assistName = string.match(input, "%s?([^%s]+)%s?", index)
         index = matchEnd + 1
         table.insert(names, assistName)
-    end
-    for i = 1, #names do
-        print(names[i])
     end
     return names
 end
@@ -264,10 +269,11 @@ function TBCEPGP:SyncRaidersAddOnMsg()
 end
 
 function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
-    if prefix == "AZPVERSIONS" and sender ~= player then
-        local version = AZP.TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
+    local player = UnitName("PLAYER")
+    if prefix == "TBCEPGPVersion" and sender ~= player then
+        local version = TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
         if version ~= nil then
-            AZP.TBCEPGP:ReceiveVersion(version)
+            TBCEPGP:ReceiveVersion(version)
         end
     elseif prefix == "TBCEPGP" then
         local playerName = UnitName("player")
@@ -276,49 +282,49 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         local subStringList = {}
         sender = string.match(sender, "(.*)-")
         print("TBC-EPGP Sync Received from:", sender)
-        if sender == "Wirepriest" then print("Wire <3") end
-        if tContains(TBCEPGPAdminList, sender) then print("Also Wire <3") end
-        if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
-            if payload == "EndOfSync" then print("Sync Received from", sender)
-            else
-                for i = 1, 6 do
-                    if subPayload ~= nil then
-                        subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
-                        local stringFind = string.find(subPayload, ":", 1)
-                        if stringFind ~= nil then
-                            subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
-                        end
-                    end
-                    subStringList[3] = tonumber(subStringList[3])
-                    subStringList[4] = tonumber(subStringList[4])
-                    subStringList[5] = tonumber(subStringList[5])
-                    subStringList[6] = tonumber(subStringList[6])
-                end
-
-                if players[subStringList[1]] == nil then
-                    local curGUID = subStringList[1]
-                    players[curGUID] = {}
-                    players[curGUID].Name = subStringList[2]
-                    players[curGUID].Update = subStringList[3]
-                    players[curGUID].Class = subStringList[4]
-                    players[curGUID].EP = subStringList[5]
-                    players[curGUID].GP = subStringList[6]
+        if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
+            if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
+                if payload == "EndOfSync" then print("Sync Received from", sender)
                 else
-                    local curGUID = subStringList[1]
-                    if players[curGUID].Update < subStringList[3] then
+                    for i = 1, 6 do
+                        if subPayload ~= nil then
+                            subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
+                            local stringFind = string.find(subPayload, ":", 1)
+                            if stringFind ~= nil then
+                                subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
+                            end
+                        end
+                        subStringList[3] = tonumber(subStringList[3])
+                        subStringList[4] = tonumber(subStringList[4])
+                        subStringList[5] = tonumber(subStringList[5])
+                        subStringList[6] = tonumber(subStringList[6])
+                    end
+
+                    if players[subStringList[1]] == nil then
+                        local curGUID = subStringList[1]
+                        players[curGUID] = {}
                         players[curGUID].Name = subStringList[2]
                         players[curGUID].Update = subStringList[3]
                         players[curGUID].Class = subStringList[4]
                         players[curGUID].EP = subStringList[5]
                         players[curGUID].GP = subStringList[6]
+                    else
+                        local curGUID = subStringList[1]
+                        if players[curGUID].Update < subStringList[3] then
+                            players[curGUID].Name = subStringList[2]
+                            players[curGUID].Update = subStringList[3]
+                            players[curGUID].Class = subStringList[4]
+                            players[curGUID].EP = subStringList[5]
+                            players[curGUID].GP = subStringList[6]
+                        end
                     end
+                    for _, value in pairs(players) do
+                        if value.EP == nil then value.EP = 0 end
+                        if value.GP == nil then value.GP = 0 end
+                    end
+                    TBCEPGPDataTable.Players = players
+                    TBCEPGP:FillUserFrameScrollPanel(players)
                 end
-                for _, value in pairs(players) do
-                    if value.EP == nil then value.EP = 0 end
-                    if value.GP == nil then value.GP = 0 end
-                end
-                TBCEPGPDataTable.Players = players
-                TBCEPGP:FillUserFrameScrollPanel(players)
             end
         end
     end
@@ -376,13 +382,13 @@ function TBCEPGP:ShareVersion() -- Change DelayedExecution to native WoW Functio
         else
             if IsInGroup() then
                 if IsInRaid() then
-                    C_ChatInfo.SendAddonMessage("TBCEPGPVerion", versionString ,"RAID", 1)
+                    C_ChatInfo.SendAddonMessage("TBCEPGPVersion", versionString ,"RAID", 1)
                 else
-                    C_ChatInfo.SendAddonMessage("TBCEPGPVerion", versionString ,"PARTY", 1)
+                    C_ChatInfo.SendAddonMessage("TBCEPGPVersion", versionString ,"PARTY", 1)
                 end
             end
             if IsInGuild() then
-                C_ChatInfo.SendAddonMessage("TBCEPGPVerion", versionString ,"GUILD", 1)
+                C_ChatInfo.SendAddonMessage("TBCEPGPVersion", versionString ,"GUILD", 1)
             end
         end
     end)
