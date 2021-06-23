@@ -43,6 +43,7 @@ function TBCEPGP:OnLoad()
     TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.Events:AddonLoaded(...) end)
     TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.Events:VariablesLoaded(...) end)
     TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.Events:ChatMsgAddon(...) end)
+    TBCEPGP:RegisterEvents("GROUP_ROSTER_UPDATE", function(...) TBCEPGP.Events:GroupRosterUpdate(...) end)
 
     EventFrame:SetScript("OnEvent", function(...)
         TBCEPGP:OnEvent(...)
@@ -268,6 +269,10 @@ function TBCEPGP:SyncRaidersAddOnMsg()
     print("Sync AddOn Messages Send!")
 end
 
+function TBCEPGP.Events:GroupRosterUpdate()
+    TBCEPGP:ShareVersion()
+end
+
 function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
     local player = UnitName("PLAYER")
     if prefix == "TBCEPGPVersion" and sender ~= player then
@@ -357,6 +362,7 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP:TempDataChanger()
 
     TBCEPGP.CreateUserFrame()
+    TBCEPGP:ShareVersion()
 end
 
 function TBCEPGP:DelayedExecution(delayTime, delayedFunction)
