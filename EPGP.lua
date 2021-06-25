@@ -445,7 +445,7 @@ end
 function TBCEPGP:CreateUserFrame()
     EPGPUserFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     EPGPUserFrame:SetPoint("CENTER", 0, 0)
-    EPGPUserFrame:SetSize(500, 400)
+    EPGPUserFrame:SetSize(600, 400)
     EPGPUserFrame:EnableMouse(true)
     EPGPUserFrame:SetMovable(true)
     EPGPUserFrame:RegisterForDrag("LeftButton")
@@ -465,8 +465,8 @@ function TBCEPGP:CreateUserFrame()
 
     EPGPUserFrame.Title.Text = EPGPUserFrame.Title:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalLarge")
     EPGPUserFrame.Title.Text:SetPoint("TOP", 0, -EPGPUserFrame.Title:GetHeight() * 0.25 + 4)
-    EPGPUserFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version
-)
+    EPGPUserFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+
     EPGPUserFrame.Title.Texture = EPGPUserFrame.Title:CreateTexture(nil, "BACKGROUND")
     EPGPUserFrame.Title.Texture:SetAllPoints()
     EPGPUserFrame.Title.Texture:SetTexture("Interface/DialogFrame/UI-DialogBox-Header")
@@ -573,6 +573,11 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.changeGP:SetFrameStrata("HIGH")
     EPGPUserFrame.Header.changeGP:SetText(0)
     EPGPUserFrame.Header.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
+
+    EPGPUserFrame.Header.curPR = EPGPUserFrame.Header:CreateFontString("EPGPUserFrame.Header", "ARTWORK", "GameFontNormal")
+    EPGPUserFrame.Header.curPR:SetSize(50, 25)
+    EPGPUserFrame.Header.curPR:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.changeGP, "BOTTOMRIGHT", 25, 0)
+    EPGPUserFrame.Header.curPR:SetText("PR")
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPUserFrameCloseButton:SetSize(30, 30)
@@ -788,6 +793,10 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
             curPlayerFrame.changeGP:SetAutoFocus(false)
             curPlayerFrame.changeGP:SetFrameStrata("HIGH")
 
+            curPlayerFrame.curPR = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.curPR:SetSize(50, 25)
+            curPlayerFrame.curPR:SetPoint("LEFT", curPlayerFrame.changeGP, "RIGHT", 25, 0)
+
             curPlayerFrame.changeEP:HookScript("OnEditFocusLost",
             function()
                 players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + tonumber(curPlayerFrame.changeEP:GetText())
@@ -807,13 +816,15 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
         filteredPlayerFrames[index] = curPlayerFrame
 
-        local curName, curClass, curEP, curGP = nil, nil, nil, nil
+        local curName, curClass, curEP, curGP, curPR = nil, nil, nil, nil, nil
         curPlayerFrame.key = key
 
         curName = value.Name
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
+        
+        if curEP == 0 or curGP == 0 then curPR = "-" else curPR = curEP/curGP end
 
         curPlayerFrame:Show()
 
@@ -821,6 +832,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curPlayerFrame.Class:SetText(classNumbers[curClass][1])
         curPlayerFrame.curEP:SetText(curEP)
         curPlayerFrame.curGP:SetText(curGP)
+        curPlayerFrame.curPR:SetText(curPR)
         curPlayerFrame.changeEP:SetText(0)
         curPlayerFrame.changeGP:SetText(0)
 
