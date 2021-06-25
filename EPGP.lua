@@ -803,6 +803,10 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
                 players[curPlayerFrame.key].Update = time()
                 curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
+
+                local curPR = nil
+                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPlayerFrame.curPR:SetText(curPR)
             end)
 
             curPlayerFrame.changeGP:HookScript("OnEditFocusLost",
@@ -811,6 +815,10 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
                 players[curPlayerFrame.key].Update = time()
                 curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
+
+                local curPR = nil
+                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPlayerFrame.curPR:SetText(curPR)
             end)
         end
 
@@ -824,7 +832,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curEP = value.EP
         curGP = value.GP
         
-        if curEP == 0 or curGP == 0 then curPR = "-" else curPR = curEP/curGP end
+        curPR = TBCEPGP:CalculatePriority(curEP, curGP)
 
         curPlayerFrame:Show()
 
@@ -850,6 +858,12 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     for j, frame in pairs(filteredPlayerFrames) do
         frame:SetPoint("TOPLEFT", scrollPanel, "TOPLEFT", 0, -24 * j + 24)
     end
+end
+
+function TBCEPGP:CalculatePriority(curEP, curGP)
+    local curPR = nil
+    if curEP == 0 or curGP == 0 then curPR = "-" else curPR = curEP/curGP end
+    return curPR
 end
 
 function TBCEPGP.Events:EncounterStart()
