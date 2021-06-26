@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 16
+TBCEPGP.Version = 17
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPUserFrame, scrollPanel, EPGPOptionsPanel = nil, nil, nil, nil, nil
@@ -219,22 +219,26 @@ function TBCEPGP:RollItem(inputLink)
 end
 
 function TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
-    local numPlayers = TBCEPGP:CountPlayersInList()
-    local epoch = time()
-    local players = TBCEPGP.DataTable.Players
-    if players[curGUID] == nil then
-        players[curGUID] = {}
-        players[curGUID].Name = curName
-        players[curGUID].Update = epoch
-        players[curGUID].Class = curClass
-        players[curGUID].EP = 0
-        players[curGUID].GP = 0
-        local year, month, date = TBCEPGP:GetDateTime()
-        local dateString = year .. month .. date
-        print("Adding Target to DataTable:", curName, "-", curGUID)
-        players[curGUID][dateString] = {}
+    if curGUID:find("Player-") ~= nil then
+        local numPlayers = TBCEPGP:CountPlayersInList()
+        local epoch = time()
+        local players = TBCEPGP.DataTable.Players
+        if players[curGUID] == nil then
+            players[curGUID] = {}
+            players[curGUID].Name = curName
+            players[curGUID].Update = epoch
+            players[curGUID].Class = curClass
+            players[curGUID].EP = 0
+            players[curGUID].GP = 0
+            local year, month, date = TBCEPGP:GetDateTime()
+            local dateString = year .. month .. date
+            print("Adding Target to DataTable:", curName, "-", curGUID)
+            players[curGUID][dateString] = {}
+        else
+            print("Player already in list!")
+        end
     else
-        print("Player already in list!")
+        print("NPC is not allowed.")
     end
 end
 
