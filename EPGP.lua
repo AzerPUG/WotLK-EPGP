@@ -936,7 +936,7 @@ function TBCEPGP:DecayDataTable()
 end
 
 function TBCEPGP:MassChange(Points)
-    local PointsChange = tonumber(EPGPAdminFrame.Header["change" .. Points]:GetText())
+    local PointsChange = tonumber(EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:GetText())
     if PointsChange ~= nil then
         local players = TBCEPGPDataTable.Players
         if filteredPlayers == nil then filteredPlayers = players end
