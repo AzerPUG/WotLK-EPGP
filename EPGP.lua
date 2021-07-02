@@ -6,7 +6,7 @@ local AddOnName = "TBC-EPGP"
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
 local EPGPAdminFrame, AdminScrollPanel = nil, nil
-local playerFrames = {}
+local adminPlayerFrames, userPlayerFrames = {}, {}
 local sortedColumn, filteredPlayers = nil, nil
 local addonLoaded, variablesLoaded = false, false
 
@@ -544,7 +544,7 @@ function TBCEPGP:CreateAdminFrame()
     })
     EPGPAdminFrame.ExtraBG:SetBackdropColor(0.25, 0.25, 0.25, 1)
 
-    local scrollFrame = CreateFrame("ScrollFrame", "scrollFrame", EPGPAdminFrame, "UIPanelScrollFrameTemplate BackdropTemplate");
+    local scrollFrame = CreateFrame("ScrollFrame", nil, EPGPAdminFrame, "UIPanelScrollFrameTemplate BackdropTemplate");
     scrollFrame:SetSize(EPGPAdminFrame:GetWidth() - 45, EPGPAdminFrame:GetHeight() - 77)
     scrollFrame:SetPoint("TOP", -11, -40)
     scrollFrame:SetFrameStrata("HIGH")
@@ -660,7 +660,7 @@ function TBCEPGP:CreateAdminFrame()
         local unitName = UnitName("Target")
         local _, _, unitClass = UnitClass("Target")
         TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
-        TBCEPGP:FillUserFrameScrollPanel(players)
+        TBCEPGP:FillAdminFrameScrollPanel(players)
     end)
     AddToDataBaseButton.text = AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
     AddToDataBaseButton.text:SetPoint("CENTER", 0, 0)
@@ -797,7 +797,7 @@ function TBCEPGP:CreateUserFrame()
     })
     EPGPUserFrame.ExtraBG:SetBackdropColor(0.25, 0.25, 0.25, 1)
 
-    local scrollFrame = CreateFrame("ScrollFrame", "scrollFrame", EPGPUserFrame, "UIPanelScrollFrameTemplate BackdropTemplate");
+    local scrollFrame = CreateFrame("ScrollFrame", nil, EPGPUserFrame, "UIPanelScrollFrameTemplate BackdropTemplate");
     scrollFrame:SetSize(EPGPUserFrame:GetWidth() - 45, EPGPUserFrame:GetHeight() - 77)
     scrollFrame:SetPoint("TOP", -11, -40)
     scrollFrame:SetFrameStrata("HIGH")
@@ -930,6 +930,7 @@ function TBCEPGP:MassChange(Points)
         end
         EPGPUserFrame.Header["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+        TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
     end
 end
 
@@ -957,6 +958,7 @@ function TBCEPGP:filterPlayers()
     end
     if allFiltersOff == true then filteredPlayers = players end
     TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
 function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
@@ -966,15 +968,15 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
     if inputPlayers == nil then players = TBCEPGP.DataTable.Players end
 
-    for _, value in pairs(playerFrames) do
+    for _, value in pairs(adminPlayerFrames) do
         value:Hide()
     end
 
     for key, value in pairs(players) do
-        local curPlayerFrame = playerFrames[index]
+        local curPlayerFrame = adminPlayerFrames[index]
         if curPlayerFrame == nil then
             curPlayerFrame = CreateFrame("Frame", nil, AdminScrollPanel, "BackdropTemplate")
-            playerFrames[index] = curPlayerFrame
+            adminPlayerFrames[index] = curPlayerFrame
             curPlayerFrame:SetSize(AdminScrollPanel:GetWidth() - 4, 25)
             curPlayerFrame:EnableMouse(true)
             curPlayerFrame:SetBackdrop({
@@ -1054,15 +1056,15 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
     if inputPlayers == nil then players = TBCEPGP.DataTable.Players end
 
-    for _, value in pairs(playerFrames) do
+    for _, value in pairs(userPlayerFrames) do
         value:Hide()
     end
 
     for key, value in pairs(players) do
-        local curPlayerFrame = playerFrames[index]
+        local curPlayerFrame = userPlayerFrames[index]
         if curPlayerFrame == nil then
             curPlayerFrame = CreateFrame("Frame", nil, UserScrollPanel, "BackdropTemplate")
-            playerFrames[index] = curPlayerFrame
+            userPlayerFrames[index] = curPlayerFrame
             curPlayerFrame:SetSize(UserScrollPanel:GetWidth() - 4, 25)
             curPlayerFrame:EnableMouse(true)
             curPlayerFrame:SetBackdrop({
