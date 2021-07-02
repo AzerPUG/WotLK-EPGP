@@ -936,7 +936,7 @@ function TBCEPGP:DecayDataTable()
 end
 
 function TBCEPGP:MassChange(Points)
-    local PointsChange = tonumber(EPGPUserFrame.Header["change" .. Points]:GetText())
+    local PointsChange = tonumber(EPGPAdminFrame.Header["change" .. Points]:GetText())
     if PointsChange ~= nil then
         local players = TBCEPGPDataTable.Players
         if filteredPlayers == nil then filteredPlayers = players end
@@ -944,7 +944,7 @@ function TBCEPGP:MassChange(Points)
             value[Points] = value[Points] + PointsChange
             value.Update = time()
         end
-        EPGPUserFrame.Header["change" .. Points]:SetText(0)
+        EPGPAdminFrame.Header["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
         TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
     end
@@ -1023,6 +1023,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -40, 0)
             curPlayerFrame.changeEP:SetAutoFocus(false)
             curPlayerFrame.changeEP:SetFrameStrata("HIGH")
+            curPlayerFrame.changeEP:SetText(0)
 
             curPlayerFrame.curGP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.curGP:SetSize(EPGPAdminFrame.Header.curGP:GetWidth(), 25)
@@ -1034,6 +1035,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -40, 0)
             curPlayerFrame.changeGP:SetAutoFocus(false)
             curPlayerFrame.changeGP:SetFrameStrata("HIGH")
+            curPlayerFrame.changeGP:SetText(0)
 
             curPlayerFrame.curPR = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth(), 25)
