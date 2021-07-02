@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 17
+TBCEPGP.Version = 18
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -127,7 +127,6 @@ function TBCEPGP:OnLoad()
         end
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
-
 
     EPGPOptionsPanel:Hide()
 end
@@ -605,6 +604,14 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curEP.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.curEP.Text:SetText("EP")
 
+    EPGPAdminFrame.Header.curEP.changeEP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curEP, "InputBoxTemplate")
+    EPGPAdminFrame.Header.curEP.changeEP:SetSize(30, 25)
+    EPGPAdminFrame.Header.curEP.changeEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -40, 0)
+    EPGPAdminFrame.Header.curEP.changeEP:SetAutoFocus(false)
+    EPGPAdminFrame.Header.curEP.changeEP:SetFrameStrata("HIGH")
+    EPGPAdminFrame.Header.curEP.changeEP:SetText(0)
+    EPGPAdminFrame.Header.curEP.changeEP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("EP") end)
+
     EPGPAdminFrame.Header.curGP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.curGP:SetSize(175, 24)
     EPGPAdminFrame.Header.curGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -4, 0)
@@ -620,6 +627,14 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curGP.Text:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame.Header.curGP.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.curGP.Text:SetText("GP")
+
+    EPGPAdminFrame.Header.curGP.changeGP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curGP, "InputBoxTemplate")
+    EPGPAdminFrame.Header.curGP.changeGP:SetSize(30, 25)
+    EPGPAdminFrame.Header.curGP.changeGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curGP, "BOTTOMRIGHT", -40, 0)
+    EPGPAdminFrame.Header.curGP.changeGP:SetAutoFocus(false)
+    EPGPAdminFrame.Header.curGP.changeGP:SetFrameStrata("HIGH")
+    EPGPAdminFrame.Header.curGP.changeGP:SetText(0)
+    EPGPAdminFrame.Header.curGP.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
 
     EPGPAdminFrame.Header.curPR = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.curPR:SetSize(75, 24)
@@ -1002,10 +1017,22 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", -4, 0)
             curPlayerFrame.curEP:SetTextColor(1, 1, 1, 1)
 
+            curPlayerFrame.changeEP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
+            curPlayerFrame.changeEP:SetSize(30, 25)
+            curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -40, 0)
+            curPlayerFrame.changeEP:SetAutoFocus(false)
+            curPlayerFrame.changeEP:SetFrameStrata("HIGH")
+
             curPlayerFrame.curGP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.curGP:SetSize(EPGPAdminFrame.Header.curGP:GetWidth(), 25)
             curPlayerFrame.curGP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -4, 0)
             curPlayerFrame.curGP:SetTextColor(1, 1, 1, 1)
+
+            curPlayerFrame.changeGP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
+            curPlayerFrame.changeGP:SetSize(30, 25)
+            curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -40, 0)
+            curPlayerFrame.changeGP:SetAutoFocus(false)
+            curPlayerFrame.changeGP:SetFrameStrata("HIGH")
 
             curPlayerFrame.curPR = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth(), 25)
