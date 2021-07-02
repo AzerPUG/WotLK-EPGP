@@ -1041,6 +1041,30 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth(), 25)
             curPlayerFrame.curPR:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -4, 0)
             curPlayerFrame.curPR:SetTextColor(1, 1, 1, 1)
+
+            curPlayerFrame.changeEP:HookScript("OnEditFocusLost",
+            function()
+                players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + tonumber(curPlayerFrame.changeEP:GetText())
+                players[curPlayerFrame.key].Update = time()
+                curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
+                curPlayerFrame.changeEP:SetText(0)
+
+                local curPR = nil
+                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPlayerFrame.curPR:SetText(curPR)
+            end)
+
+            curPlayerFrame.changeGP:HookScript("OnEditFocusLost",
+            function()
+                players[curPlayerFrame.key].GP = players[curPlayerFrame.key].GP + tonumber(curPlayerFrame.changeGP:GetText())
+                players[curPlayerFrame.key].Update = time()
+                curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
+                curPlayerFrame.changeGP:SetText(0)
+
+                local curPR = nil
+                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPlayerFrame.curPR:SetText(curPR)
+            end)
         end
 
         filteredPlayerFrames[index] = curPlayerFrame
