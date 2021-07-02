@@ -387,6 +387,7 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP.CreateAdminFrame()
     TBCEPGP.CreateUserFrame()
 
+    ShowAdminViewCheckButton:SetChecked(TBCEPGPShowAdminView)
     if TBCEPGPShowAdminView then
         EPGPAdminFrame:Show()
     else
