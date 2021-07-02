@@ -114,6 +114,21 @@ function TBCEPGP:OnLoad()
         end
     end)
 
+    EPGPOptionsPanel.showAdminViewCheckButton = CreateFrame("CheckButton", "ShowAdminViewCheckButton", EPGPOptionsPanel, "ChatConfigCheckButtonTemplate");
+    EPGPOptionsPanel.showAdminViewCheckButton:SetPoint("TOPLEFT", 25, -175);
+    EPGPOptionsPanel.showAdminViewCheckButton:SetScript("OnClick", function()
+        TBCEPGPShowAdminView = EPGPOptionsPanel.showAdminViewCheckButton:GetChecked()
+        if TBCEPGPShowAdminView then
+            EPGPUserFrame:Hide()
+            EPGPAdminFrame:Show()
+        else
+            EPGPAdminFrame:Hide()
+            EPGPUserFrame:Show()
+        end
+    end)
+    ShowAdminViewCheckButtonText:SetText("Show Admin View")
+
+
     EPGPOptionsPanel:Hide()
 end
 
@@ -372,6 +387,12 @@ function TBCEPGP:VarsAndAddonLoaded()
 
     TBCEPGP.CreateAdminFrame()
     TBCEPGP.CreateUserFrame()
+
+    if TBCEPGPShowAdminView then
+        EPGPAdminFrame:Show()
+    else
+        EPGPUserFrame:Show()
+    end
     TBCEPGP:ShareVersion()
 end
 
@@ -758,7 +779,7 @@ function TBCEPGP:CreateAdminFrame()
     TBCEPGP:FillAdminFrameUserScrollPanel(players)
     scrollFrame:SetScrollChild(UserScrollPanel)
 
-    --EPGPAdminFrame:Hide()
+    EPGPAdminFrame:Hide()
 end
 
 function TBCEPGP:CreateUserFrame()
