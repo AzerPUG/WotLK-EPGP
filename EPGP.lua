@@ -352,7 +352,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                         if value.GP == nil then value.GP = 0 end
                     end
                     TBCEPGPDataTable.Players = players
-                    TBCEPGP:FillUserFrameUserScrollPanel(players)
+                    TBCEPGP:FillUserFrameScrollPanel(players)
                 end
             end
         end
@@ -476,7 +476,7 @@ end
 function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame = CreateFrame("Frame", nil, UIParent)
     EPGPAdminFrame:SetPoint("CENTER", 0, 0)
-    EPGPAdminFrame:SetSize(470, 400)
+    EPGPAdminFrame:SetSize(670, 400)
     EPGPAdminFrame:EnableMouse(true)
     EPGPAdminFrame:SetMovable(true)
     EPGPAdminFrame:RegisterForDrag("LeftButton")
@@ -484,32 +484,40 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame:SetScript("OnDragStop", EPGPAdminFrame.StopMovingOrSizing)
 
     EPGPAdminFrame.TopLeftBG     = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
-    EPGPAdminFrame.TopBG         = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
+    EPGPAdminFrame.TopBG1        = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
+    EPGPAdminFrame.TopBG2        = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
     EPGPAdminFrame.TopRightBG    = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
     EPGPAdminFrame.BotLeftBG     = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
-    EPGPAdminFrame.BotBG         = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
+    EPGPAdminFrame.BotBG1        = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
+    EPGPAdminFrame.BotBG2        = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
     EPGPAdminFrame.BotRightBG    = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
 
     EPGPAdminFrame.TopLeftBG :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
-    EPGPAdminFrame.TopBG     :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
+    EPGPAdminFrame.TopBG1    :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
+    EPGPAdminFrame.TopBG2    :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
     EPGPAdminFrame.TopRightBG:SetSize(100, EPGPAdminFrame:GetHeight() / 2)
     EPGPAdminFrame.BotLeftBG :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
-    EPGPAdminFrame.BotBG     :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
+    EPGPAdminFrame.BotBG1    :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
+    EPGPAdminFrame.BotBG2    :SetSize(200, EPGPAdminFrame:GetHeight() / 2)
     EPGPAdminFrame.BotRightBG:SetSize(100, EPGPAdminFrame:GetHeight() / 2)
 
     EPGPAdminFrame.TopLeftBG :SetPoint("TOPLEFT", 0, 0)
-    EPGPAdminFrame.TopBG     :SetPoint("LEFT", EPGPAdminFrame.TopLeftBG, "RIGHT", 0, 0)
-    EPGPAdminFrame.TopRightBG:SetPoint("LEFT", EPGPAdminFrame.TopBG, "RIGHT", 0, 0)
+    EPGPAdminFrame.TopBG1    :SetPoint("LEFT", EPGPAdminFrame.TopLeftBG, "RIGHT", 0, 0)
+    EPGPAdminFrame.TopBG2    :SetPoint("LEFT", EPGPAdminFrame.TopBG1, "RIGHT", 0, 0)
+    EPGPAdminFrame.TopRightBG:SetPoint("LEFT", EPGPAdminFrame.TopBG2, "RIGHT", 0, 0)
 
     EPGPAdminFrame.BotLeftBG :SetPoint("TOP", EPGPAdminFrame.TopLeftBG, "BOTTOM", 0, 0)
-    EPGPAdminFrame.BotBG     :SetPoint("TOP", EPGPAdminFrame.TopBG, "BOTTOM", 0, 0)
+    EPGPAdminFrame.BotBG1    :SetPoint("TOP", EPGPAdminFrame.TopBG1, "BOTTOM", 0, 0)
+    EPGPAdminFrame.BotBG2    :SetPoint("TOP", EPGPAdminFrame.TopBG2, "BOTTOM", 0, 0)
     EPGPAdminFrame.BotRightBG:SetPoint("TOP", EPGPAdminFrame.TopRightBG, "BOTTOM", 0, 0)
 
     EPGPAdminFrame.TopLeftBG :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOPLEFT"})
-    EPGPAdminFrame.TopBG     :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
+    EPGPAdminFrame.TopBG1    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
+    EPGPAdminFrame.TopBG2    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
     EPGPAdminFrame.TopRightBG:SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOPRIGHT"})
     EPGPAdminFrame.BotLeftBG :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTLEFT"})
-    EPGPAdminFrame.BotBG     :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
+    EPGPAdminFrame.BotBG1    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
+    EPGPAdminFrame.BotBG2    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
     EPGPAdminFrame.BotRightBG:SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTRIGHT"})
 
     EPGPAdminFrame.Title = CreateFrame("FRAME", nil, EPGPAdminFrame)
@@ -541,13 +549,13 @@ function TBCEPGP:CreateAdminFrame()
     scrollFrame:SetPoint("TOP", -11, -40)
     scrollFrame:SetFrameStrata("HIGH")
 
-    UserScrollPanel = CreateFrame("Frame")
-    UserScrollPanel:SetSize(scrollFrame:GetWidth(), 300)
-    UserScrollPanel:SetPoint("TOP")
+    AdminScrollPanel = CreateFrame("Frame")
+    AdminScrollPanel:SetSize(scrollFrame:GetWidth(), 300)
+    AdminScrollPanel:SetPoint("TOP")
 
     EPGPAdminFrame.Header = CreateFrame("Frame", nil, EPGPAdminFrame, "BackdropTemplate")
     EPGPAdminFrame.Header:SetPoint("TOP", -11, -20)
-    EPGPAdminFrame.Header:SetSize(UserScrollPanel:GetWidth(), 50)
+    EPGPAdminFrame.Header:SetSize(AdminScrollPanel:GetWidth(), 50)
 
     EPGPAdminFrame.Header.Name = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.Name:SetSize(100, 24)
@@ -581,64 +589,8 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.Class.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.Class.Text:SetText("Class")
 
-    -- local FilterButtons = {}
-    -- for i = 1, 11 do
-    --     if i == 6 or i == 10 then -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
-    --     else
-    --         FilterButtons[i] = CreateFrame("Button", nil, EPGPAdminFrame.Header, "BackdropTemplate")
-    --         FilterButtons[i]:SetSize(20, 16)
-
-    --         local xOff, yOff = nil, nil
-    --         if i == 1 or i == 4 or i == 8 then
-    --             xOff = -18
-    --         elseif i == 2 or i == 5 or i == 9 then
-    --             xOff = -0
-    --         elseif i == 3 or i == 7 or i == 11 then
-    --             xOff = 18
-    --         end
-    --         if i == 1 or i == 2 or i == 3 then
-    --             yOff = 13
-    --         elseif i == 4 or i == 5 or i == 7 then
-    --             yOff = 0
-    --         elseif i == 8 or i == 9 or i == 11 then
-    --             yOff = -13
-    --         end
-
-    --         FilterButtons[i]:SetPoint("LEFT", EPGPAdminFrame.Header.Class, "RIGHT", -60 + xOff, 30 + yOff)
-
-    --         FilterButtons[i]:SetBackdrop({
-    --             bgFile = "Interface/Tooltips/UI-Tooltip-Background",
-    --             edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
-    --             edgeSize = 10,
-    --             insets = {left = 3, right = 3, top = 3, bottom = 3},
-    --         })
-
-    --         local r, g = 1, 0
-    --         FilterButtons[i]:SetBackdropColor(1, 0, 0, 1)
-
-    --         FilterButtons[i]:SetScript("OnClick",
-    --         function()
-    --             if filteredClasses[i] then
-    --                 filteredClasses[i] = false
-    --                 r = 1
-    --                 g = 0
-    --             else
-    --                 filteredClasses[i] = true
-    --                 r = 0
-    --                 g = 1
-    --             end
-    --             TBCEPGP:filterPlayers(i)
-    --             FilterButtons[i]:SetBackdropColor(r, g, 0, 1)
-    --         end)
-
-    --         FilterButtons[i].text = FilterButtons[i]:CreateFontString("FilterButton", "ARTWORK", "GameFontNormalTiny")
-    --         FilterButtons[i].text:SetPoint("CENTER", 0, 0)
-    --         FilterButtons[i].text:SetText(classNumbers[i][2])
-    --     end
-    -- end
-
     EPGPAdminFrame.Header.curEP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
-    EPGPAdminFrame.Header.curEP:SetSize(75, 24)
+    EPGPAdminFrame.Header.curEP:SetSize(175, 24)
     EPGPAdminFrame.Header.curEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.Class, "BOTTOMRIGHT", -4, 0)
     EPGPAdminFrame.Header.curEP:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -654,7 +606,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curEP.Text:SetText("EP")
 
     EPGPAdminFrame.Header.curGP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
-    EPGPAdminFrame.Header.curGP:SetSize(75, 24)
+    EPGPAdminFrame.Header.curGP:SetSize(175, 24)
     EPGPAdminFrame.Header.curGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -4, 0)
     EPGPAdminFrame.Header.curGP:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -708,7 +660,7 @@ function TBCEPGP:CreateAdminFrame()
         local unitName = UnitName("Target")
         local _, _, unitClass = UnitClass("Target")
         TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
-        TBCEPGP:FillUserFrameUserScrollPanel(players)
+        TBCEPGP:FillUserFrameScrollPanel(players)
     end)
     AddToDataBaseButton.text = AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
     AddToDataBaseButton.text:SetPoint("CENTER", 0, 0)
@@ -776,8 +728,8 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.SyncButton.text:SetText("Sync")
 
     local players = TBCEPGP.DataTable.Players
-    TBCEPGP:FillAdminFrameUserScrollPanel(players)
-    scrollFrame:SetScrollChild(UserScrollPanel)
+    TBCEPGP:FillAdminFrameScrollPanel(players)
+    scrollFrame:SetScrollChild(AdminScrollPanel)
 
     EPGPAdminFrame:Hide()
 end
@@ -951,7 +903,7 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrameCloseButton:SetScript("OnClick", function() EPGPUserFrame:Hide() end)
 
     local players = TBCEPGP.DataTable.Players
-    TBCEPGP:FillUserFrameUserScrollPanel(players)
+    TBCEPGP:FillUserFrameScrollPanel(players)
     scrollFrame:SetScrollChild(UserScrollPanel)
 
     EPGPUserFrame:Hide()
@@ -977,7 +929,7 @@ function TBCEPGP:MassChange(Points)
             value.Update = time()
         end
         EPGPUserFrame.Header["change" .. Points]:SetText(0)
-        TBCEPGP:FillUserFrameUserScrollPanel(filteredPlayers)
+        TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
     end
 end
 
@@ -1004,10 +956,10 @@ function TBCEPGP:filterPlayers()
         end
     end
     if allFiltersOff == true then filteredPlayers = players end
-    TBCEPGP:FillUserFrameUserScrollPanel(filteredPlayers)
+    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
 end
 
-function TBCEPGP:FillAdminFrameUserScrollPanel(inputPlayers)        --Change User to Admin in function!
+function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
     local players = inputPlayers
     local filteredPlayerFrames = {}
     local index = 1
@@ -1021,9 +973,9 @@ function TBCEPGP:FillAdminFrameUserScrollPanel(inputPlayers)        --Change Use
     for key, value in pairs(players) do
         local curPlayerFrame = playerFrames[index]
         if curPlayerFrame == nil then
-            curPlayerFrame = CreateFrame("Frame", nil, UserScrollPanel, "BackdropTemplate")
+            curPlayerFrame = CreateFrame("Frame", nil, AdminScrollPanel, "BackdropTemplate")
             playerFrames[index] = curPlayerFrame
-            curPlayerFrame:SetSize(UserScrollPanel:GetWidth() - 4, 25)
+            curPlayerFrame:SetSize(AdminScrollPanel:GetWidth() - 4, 25)
             curPlayerFrame:EnableMouse(true)
             curPlayerFrame:SetBackdrop({
                 bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -1039,22 +991,22 @@ function TBCEPGP:FillAdminFrameUserScrollPanel(inputPlayers)        --Change Use
             curPlayerFrame.Name:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.Class = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-            curPlayerFrame.Class:SetSize(100, 25)
+            curPlayerFrame.Class:SetSize(EPGPAdminFrame.Header.Class:GetWidth(), 25)
             curPlayerFrame.Class:SetPoint("LEFT", curPlayerFrame.Name, "RIGHT", -4, 0)
             curPlayerFrame.Class:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.curEP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-            curPlayerFrame.curEP:SetSize(75, 25)
+            curPlayerFrame.curEP:SetSize(EPGPAdminFrame.Header.curEP:GetWidth(), 25)
             curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", -4, 0)
             curPlayerFrame.curEP:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.curGP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-            curPlayerFrame.curGP:SetSize(75, 25)
+            curPlayerFrame.curGP:SetSize(EPGPAdminFrame.Header.curGP:GetWidth(), 25)
             curPlayerFrame.curGP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -4, 0)
             curPlayerFrame.curGP:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.curPR = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-            curPlayerFrame.curPR:SetSize(75, 25)
+            curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth(), 25)
             curPlayerFrame.curPR:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -4, 0)
             curPlayerFrame.curPR:SetTextColor(1, 1, 1, 1)
         end
@@ -1091,11 +1043,11 @@ function TBCEPGP:FillAdminFrameUserScrollPanel(inputPlayers)        --Change Use
     end
 
     for j, frame in pairs(filteredPlayerFrames) do
-        frame:SetPoint("TOPLEFT", UserScrollPanel, "TOPLEFT", 5, -24 * j + 25)
+        frame:SetPoint("TOPLEFT", AdminScrollPanel, "TOPLEFT", 5, -24 * j + 25)
     end
 end
 
-function TBCEPGP:FillUserFrameUserScrollPanel(inputPlayers)
+function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     local players = inputPlayers
     local filteredPlayerFrames = {}
     local index = 1
