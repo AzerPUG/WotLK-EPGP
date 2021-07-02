@@ -1230,5 +1230,9 @@ TBCEPGP.SlashCommands["add"] = function(value)
 end
 
 TBCEPGP.SlashCommands["show"] = function(value)
-    EPGPUserFrame:Show()
+    if TBCEPGPShowAdminView then
+        EPGPAdminFrame:Show()
+    else
+        EPGPUserFrame:Show()
+    end
 end
