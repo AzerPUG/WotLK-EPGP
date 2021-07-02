@@ -125,6 +125,7 @@ function TBCEPGP:OnLoad()
             EPGPAdminFrame:Hide()
             EPGPUserFrame:Show()
         end
+        TBCEPGP:filterPlayers()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
 
@@ -309,7 +310,6 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         local players = TBCEPGPDataTable.Players
         local subStringList = {}
         sender = string.match(sender, "(.*)-")
-        print("TBC-EPGP Sync Received from:", sender)
         if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
             if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
                 if payload == "EndOfSync" then print("Sync Received from", sender)
@@ -351,6 +351,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                         if value.GP == nil then value.GP = 0 end
                     end
                     TBCEPGPDataTable.Players = players
+                    TBCEPGP:FillAdminFrameScrollPanel(players)
                     TBCEPGP:FillUserFrameScrollPanel(players)
                 end
             end
@@ -944,7 +945,7 @@ function TBCEPGP:MassChange(Points)
             value[Points] = value[Points] + PointsChange
             value.Update = time()
         end
-        EPGPAdminFrame.Header["change" .. Points]:SetText(0)
+        EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
         TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
     end
