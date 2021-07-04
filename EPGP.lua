@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 18
+TBCEPGP.Version = 19
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -10,8 +10,7 @@ local adminPlayerFrames, userPlayerFrames = {}, {}
 local sortedColumn, filteredPlayers = nil, nil
 local addonLoaded, variablesLoaded = false, false
 
--- Stuff To Use?
--- Interface\Artifacts\Artifacts-PerkRing-Final-Mask
+if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
 
 local classNumbers =
 {
@@ -118,10 +117,10 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.showAdminViewCheckButton:SetPoint("TOPLEFT", 25, -175);
     EPGPOptionsPanel.showAdminViewCheckButton:SetScript("OnClick", function()
         TBCEPGPShowAdminView = EPGPOptionsPanel.showAdminViewCheckButton:GetChecked()
-        if TBCEPGPShowAdminView then
+        if TBCEPGPShowAdminView == true then
             EPGPUserFrame:Hide()
             EPGPAdminFrame:Show()
-        else
+        elseif TBCEPGPShowAdminView == false then
             EPGPAdminFrame:Hide()
             EPGPUserFrame:Show()
         end
@@ -389,9 +388,9 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP.CreateUserFrame()
 
     ShowAdminViewCheckButton:SetChecked(TBCEPGPShowAdminView)
-    if TBCEPGPShowAdminView then
+    if TBCEPGPShowAdminView == true then
         EPGPAdminFrame:Show()
-    else
+    elseif TBCEPGPShowAdminView == false then
         EPGPUserFrame:Show()
     end
     TBCEPGP:ShareVersion()
@@ -602,17 +601,28 @@ function TBCEPGP:CreateAdminFrame()
 
     EPGPAdminFrame.Header.curEP.Text = EPGPAdminFrame.Header.curEP:CreateFontString("EPGPAdminFrame.Header.curEP.Text", "ARTWORK", "GameFontNormal")
     EPGPAdminFrame.Header.curEP.Text:SetSize(EPGPAdminFrame.Header.curEP:GetWidth(), EPGPAdminFrame.Header.curEP:GetHeight())
-    EPGPAdminFrame.Header.curEP.Text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curEP.Text:SetPoint("CENTER", -25, 0)
     EPGPAdminFrame.Header.curEP.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.curEP.Text:SetText("EP")
 
+    EPGPAdminFrame.EPLocked = true
+
+    EPGPAdminFrame.Header.curEP.LockUnlockButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackdropTemplate")
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetSize(25, 25)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetPoint("RIGHT", 0, 0)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetScript("OnClick", function() TBCEPGP:LockUnlockAdminControls("EP") end)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetBackdrop({
+        bgFile = "Interface/Buttons/LockButton-Locked-Up"
+    })
+
     EPGPAdminFrame.Header.curEP.changeEP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curEP, "InputBoxTemplate")
-    EPGPAdminFrame.Header.curEP.changeEP:SetSize(30, 25)
-    EPGPAdminFrame.Header.curEP.changeEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -40, 0)
+    EPGPAdminFrame.Header.curEP.changeEP:SetSize(50, 25)
+    EPGPAdminFrame.Header.curEP.changeEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -75, 0)
     EPGPAdminFrame.Header.curEP.changeEP:SetAutoFocus(false)
     EPGPAdminFrame.Header.curEP.changeEP:SetFrameStrata("HIGH")
     EPGPAdminFrame.Header.curEP.changeEP:SetText(0)
     EPGPAdminFrame.Header.curEP.changeEP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("EP") end)
+    EPGPAdminFrame.Header.curEP.changeEP:Hide()
 
     EPGPAdminFrame.Header.curGP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.curGP:SetSize(175, 24)
@@ -624,19 +634,30 @@ function TBCEPGP:CreateAdminFrame()
     })
     EPGPAdminFrame.Header.curGP:SetBackdropColor(1, 1, 1, 1)
 
+    EPGPAdminFrame.GPLocked = true
+
+    EPGPAdminFrame.Header.curGP.LockUnlockButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackdropTemplate")
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetSize(25, 25)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetPoint("RIGHT", 0, 0)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetScript("OnClick", function() TBCEPGP:LockUnlockAdminControls("GP") end)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetBackdrop({
+        bgFile = "Interface/Buttons/LockButton-Locked-Up"
+    })
+
     EPGPAdminFrame.Header.curGP.Text = EPGPAdminFrame.Header.curGP:CreateFontString("EPGPAdminFrame.Header.curGP.Text", "ARTWORK", "GameFontNormal")
     EPGPAdminFrame.Header.curGP.Text:SetSize(EPGPAdminFrame.Header.curGP:GetWidth(), EPGPAdminFrame.Header.curGP:GetHeight())
-    EPGPAdminFrame.Header.curGP.Text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curGP.Text:SetPoint("CENTER", -25, 0)
     EPGPAdminFrame.Header.curGP.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.curGP.Text:SetText("GP")
 
     EPGPAdminFrame.Header.curGP.changeGP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curGP, "InputBoxTemplate")
-    EPGPAdminFrame.Header.curGP.changeGP:SetSize(30, 25)
-    EPGPAdminFrame.Header.curGP.changeGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curGP, "BOTTOMRIGHT", -40, 0)
+    EPGPAdminFrame.Header.curGP.changeGP:SetSize(50, 25)
+    EPGPAdminFrame.Header.curGP.changeGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curGP, "BOTTOMRIGHT", -75, 0)
     EPGPAdminFrame.Header.curGP.changeGP:SetAutoFocus(false)
     EPGPAdminFrame.Header.curGP.changeGP:SetFrameStrata("HIGH")
     EPGPAdminFrame.Header.curGP.changeGP:SetText(0)
     EPGPAdminFrame.Header.curGP.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
+    EPGPAdminFrame.Header.curGP.changeGP:Hide()
 
     EPGPAdminFrame.Header.curPR = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.curPR:SetSize(75, 24)
@@ -749,6 +770,19 @@ function TBCEPGP:CreateAdminFrame()
     scrollFrame:SetScrollChild(AdminScrollPanel)
 
     EPGPAdminFrame:Hide()
+end
+
+function TBCEPGP:LockUnlockAdminControls(Points)
+    if EPGPAdminFrame[Points .. "Locked"] == true then
+        EPGPAdminFrame[Points .. "Locked"] = false
+        EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:Show()
+        EPGPAdminFrame.Header["cur" .. Points].LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Unlocked-Up"})
+    elseif EPGPAdminFrame[Points .. "Locked"] == false then
+        EPGPAdminFrame[Points .. "Locked"] = true
+        EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:Hide()
+        EPGPAdminFrame.Header["cur" .. Points].LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Locked-Up"})
+    end
+    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
 function TBCEPGP:CreateUserFrame()
@@ -1016,12 +1050,12 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
             curPlayerFrame.curEP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.curEP:SetSize(EPGPAdminFrame.Header.curEP:GetWidth(), 25)
-            curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", -4, 0)
+            curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", -29, 0)
             curPlayerFrame.curEP:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.changeEP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
-            curPlayerFrame.changeEP:SetSize(30, 25)
-            curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -40, 0)
+            curPlayerFrame.changeEP:SetSize(50, 25)
+            curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -50, 0)
             curPlayerFrame.changeEP:SetAutoFocus(false)
             curPlayerFrame.changeEP:SetFrameStrata("HIGH")
             curPlayerFrame.changeEP:SetText(0)
@@ -1032,14 +1066,14 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.curGP:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.changeGP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
-            curPlayerFrame.changeGP:SetSize(30, 25)
-            curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -40, 0)
+            curPlayerFrame.changeGP:SetSize(50, 25)
+            curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -50, 0)
             curPlayerFrame.changeGP:SetAutoFocus(false)
             curPlayerFrame.changeGP:SetFrameStrata("HIGH")
             curPlayerFrame.changeGP:SetText(0)
 
             curPlayerFrame.curPR = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-            curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth(), 25)
+            curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth() + 50, 25)
             curPlayerFrame.curPR:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -4, 0)
             curPlayerFrame.curPR:SetTextColor(1, 1, 1, 1)
 
@@ -1066,6 +1100,18 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
+        end
+
+        if EPGPAdminFrame.EPLocked == true then
+            curPlayerFrame.changeEP:Hide()
+        elseif EPGPAdminFrame.EPLocked == false then
+            curPlayerFrame.changeEP:Show()
+        end
+
+        if EPGPAdminFrame.GPLocked == true then
+            curPlayerFrame.changeGP:Hide()
+        elseif EPGPAdminFrame.GPLocked == false then
+            curPlayerFrame.changeGP:Show()
         end
 
         filteredPlayerFrames[index] = curPlayerFrame
@@ -1209,6 +1255,8 @@ function TBCEPGP.Events:EncounterStart()
             TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
         end
     end
+    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
 TBCEPGP:OnLoad()
@@ -1230,9 +1278,18 @@ TBCEPGP.SlashCommands["add"] = function(value)
 end
 
 TBCEPGP.SlashCommands["show"] = function(value)
-    if TBCEPGPShowAdminView then
+    if TBCEPGPShowAdminView == true then
         EPGPAdminFrame:Show()
-    else
+    elseif TBCEPGPShowAdminView == false then
         EPGPUserFrame:Show()
     end
 end
+
+TBCEPGP.SlashCommands["Roll"] = TBCEPGP.SlashCommands["roll"]
+TBCEPGP.SlashCommands["ROLL"] = TBCEPGP.SlashCommands["roll"]
+TBCEPGP.SlashCommands["Sync"] = TBCEPGP.SlashCommands["sync"]
+TBCEPGP.SlashCommands["SYNC"] = TBCEPGP.SlashCommands["sync"]
+TBCEPGP.SlashCommands["Add"] = TBCEPGP.SlashCommands["add"]
+TBCEPGP.SlashCommands["ADD"] = TBCEPGP.SlashCommands["add"]
+TBCEPGP.SlashCommands["Show"] = TBCEPGP.SlashCommands["show"]
+TBCEPGP.SlashCommands["SHOW"] = TBCEPGP.SlashCommands["show"]
