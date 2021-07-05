@@ -7,7 +7,7 @@ local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
 local EPGPAdminFrame, AdminScrollPanel = nil, nil
 local adminPlayerFrames, userPlayerFrames = {}, {}
-local sortedColumn, filteredPlayers = nil, nil
+local sortedColumn, sortDirection, filteredPlayers = nil, "Asc", nil
 local addonLoaded, variablesLoaded = false, false
 local FilterButtonFrame = nil
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
@@ -124,7 +124,7 @@ function TBCEPGP:OnLoad()
             EPGPAdminFrame:Hide()
             EPGPUserFrame:Show()
         end
-        TBCEPGP:filterPlayers()
+        TBCEPGP:FilterPlayers()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
 
@@ -391,7 +391,7 @@ function TBCEPGP:CreateFilterButtons()
                     filteredClasses[i] = true
                     FilterButtons[i].Texture:SetDesaturated(false)
                 end
-                TBCEPGP:filterPlayers(i)
+                TBCEPGP:FilterPlayers(i)
             end)
         end
     end
@@ -1128,6 +1128,59 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curGP.SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
     EPGPUserFrame.Header.curPR.SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
 
+    EPGPUserFrame.Header.Name.SortUpButton:SetScript("OnClick", function()
+        sortDirection = "Asc"
+        sortedColumn = "Name"
+        TBCEPGP:FilterPlayers()
+    end)
+    EPGPUserFrame.Header.Class.SortUpButton:SetScript("OnClick", function()
+        sortDirection = "Asc"
+        sortedColumn = "Class"
+        TBCEPGP:FilterPlayers()
+    end)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetScript("OnClick", function()
+        sortDirection = "Asc"
+        sortedColumn = "EP"
+        TBCEPGP:FilterPlayers()
+    end)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetScript("OnClick", function()
+        sortDirection = "Asc"
+        sortedColumn = "GP"
+        TBCEPGP:FilterPlayers() 
+    end)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetScript("OnClick", function()
+        sortDirection = "Asc"
+        sortedColumn = "PR"
+        TBCEPGP:FilterPlayers()
+    end)
+
+    -- Sort Down
+    EPGPUserFrame.Header.Name.SortDownButton:SetScript("OnClick", function()
+        sortDirection = "Dsc"
+        sortedColumn = "Name"
+        TBCEPGP:FilterPlayers()
+    end)
+    EPGPUserFrame.Header.Class.SortDownButton:SetScript("OnClick", function()
+        sortDirection = "Dsc"
+        sortedColumn = "Class"
+        TBCEPGP:FilterPlayers()
+    end)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function()
+        sortDirection = "Dsc"
+        sortedColumn = "EP"
+        TBCEPGP:FilterPlayers()
+    end)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function()
+        sortDirection = "Dsc"
+        sortedColumn = "GP"
+        TBCEPGP:FilterPlayers() 
+    end)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function()
+        sortDirection = "Dsc"
+        sortedColumn = "PR"
+        TBCEPGP:FilterPlayers()
+    end)
+
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPUserFrameCloseButton:SetSize(24, 24)
     EPGPUserFrameCloseButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", -3, -3)
@@ -1147,7 +1200,7 @@ function TBCEPGP:DecayDataTable()
         value.GP = TBCEPGP:MathRound(value.GP * 1000 * 0.85) / 1000
         value.PR = TBCEPGP:CalculatePriority(value.EP, value.GP)
     end
-    TBCEPGP:filterPlayers()
+    TBCEPGP:FilterPlayers()
 end
 
 function TBCEPGP:MassChange(Points)
@@ -1165,7 +1218,7 @@ function TBCEPGP:MassChange(Points)
     end
 end
 
-function TBCEPGP:filterPlayers()
+function TBCEPGP:FilterPlayers()
     filteredPlayers = {}
     local players = TBCEPGPDataTable.Players
     for key, value in pairs(players) do
@@ -1319,14 +1372,13 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
     if sortedColumn ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            if sortedColumn == "Class" then
-                return players[a.key].Class > players[b.key].Class
-            end
+            return TBCEPGP:ComparePlayer(filteredPlayerFrames, players, a, b)
         end)
     end
 
-    for j, frame in pairs(filteredPlayerFrames) do
-        frame:SetPoint("TOPLEFT", AdminScrollPanel, "TOPLEFT", 5, -24 * j + 25)
+    for i, frame in ipairs(filteredPlayerFrames) do
+        print(frame.Name:GetText(), i)
+        frame:SetPoint("TOPLEFT", AdminScrollPanel, "TOPLEFT", 5, -24 * i + 25)
     end
 end
 
@@ -1407,16 +1459,37 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
     if sortedColumn ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            if sortedColumn == "Class" then
-                return players[a.key].Class > players[b.key].Class
-            end
+            return TBCEPGP:ComparePlayer(filteredPlayerFrames, players, a, b)
         end)
     end
 
-    for j, frame in pairs(filteredPlayerFrames) do
-        frame:SetPoint("TOPLEFT", UserScrollPanel, "TOPLEFT", 5, -24 * j + 25)
+    for i, frame in ipairs(filteredPlayerFrames) do
+        print(frame.Name:GetText(), i)
+        frame:SetPoint("TOPLEFT", UserScrollPanel, "TOPLEFT", 5, -24 * i + 25)
     end
 end
+
+function TBCEPGP:ComparePlayer(filteredPlayerFrames, players, a, b)
+    table.sort(filteredPlayerFrames, function(a, b)
+        -- if sortedColumn == "Class" then
+        print("Sort Column", sortColumn)
+        local aSort = players[a.key][sortColumn]
+        local bSort = players[b.key][sortColumn]
+        
+
+        print(aSort, bSort)
+        if sortDirection == "Asc" then
+            print(string.format("%s > %s = %s", aSort, bSort, tostring(aSort > bSort)))
+            return (aSort > bSort)
+            
+        elseif sortDirection == "Dsc" then
+            print(string.format("%s < %s = %s", aSort, bSort, tostring(aSort < bSort)))
+            return (aSort< bSort)
+        end
+        -- end
+    end)
+end
+
 
 function TBCEPGP:CalculatePriority(curEP, curGP)
     local curPR = nil
