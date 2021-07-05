@@ -7,7 +7,7 @@ local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
 local EPGPAdminFrame, AdminScrollPanel = nil, nil
 local adminPlayerFrames, userPlayerFrames = {}, {}
-local sortedColumn, sortDirection, filteredPlayers = nil, "Asc", nil
+local sortCol, sortDir, filteredPlayers = nil, "Asc", nil
 local addonLoaded, variablesLoaded = false, false
 local FilterButtonFrame = nil
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
@@ -787,6 +787,98 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curGP.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPAdminFrame.Header.curPR.Text:SetFont(curFont, curSize - 2, curFlags)
 
+    EPGPAdminFrame.Header.Name .SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header .Name, "BackDropTemplate")
+    EPGPAdminFrame.Header.Class.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.Class, "BackDropTemplate")
+    EPGPAdminFrame.Header.curEP.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curGP.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curPR.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curPR, "BackDropTemplate")
+
+    EPGPAdminFrame.Header.Name .SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header .Name, "BackDropTemplate")
+    EPGPAdminFrame.Header.Class.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.Class, "BackDropTemplate")
+    EPGPAdminFrame.Header.curEP.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curGP.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curPR.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curPR, "BackDropTemplate")
+
+    EPGPAdminFrame.Header.Name .SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetSize(10, 10)
+
+    EPGPAdminFrame.Header.Name .SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetSize(10, 10)
+
+    EPGPAdminFrame.Header.Name .SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetPoint("LEFT", 4, 5)
+
+    EPGPAdminFrame.Header.Name .SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetPoint("LEFT", 4, -3)
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture = EPGPAdminFrame.Header.Name .SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture = EPGPAdminFrame.Header.Class.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture = EPGPAdminFrame.Header.curEP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture = EPGPAdminFrame.Header.curGP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture = EPGPAdminFrame.Header.curPR.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture = EPGPAdminFrame.Header.Name .SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture = EPGPAdminFrame.Header.Class.SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture = EPGPAdminFrame.Header.curEP.SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture = EPGPAdminFrame.Header.curGP.SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture = EPGPAdminFrame.Header.curPR.SortDownButton:CreateTexture(nil, nil)
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetSize(16, 16)
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+
+    EPGPAdminFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
+    EPGPAdminFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
     local EPGPAdminFrameCloseButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPAdminFrameCloseButton:SetSize(24, 24)
     EPGPAdminFrameCloseButton:SetPoint("TOPRIGHT", EPGPAdminFrame, "TOPRIGHT", -3, -3)
@@ -822,7 +914,6 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.FilterClassesButton.text:SetText("Class Filter")
     EPGPAdminFrame.FilterClassesButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.FilterClassesButton:SetFrameLevel(4)
-
 
     local DecayConfirmWindow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     DecayConfirmWindow:SetSize(300, 150)
@@ -1074,7 +1165,7 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curPR.Text:SetText("PR")
 
     local curFont, curSize, curFlags = EPGPUserFrame.Header.Name.Text:GetFont()
-    EPGPUserFrame.Header.Name.Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPUserFrame.Header.Name .Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.Class.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.curEP.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.curGP.Text:SetFont(curFont, curSize - 2, curFlags)
@@ -1092,17 +1183,17 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curGP.SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curGP, "BackDropTemplate")
     EPGPUserFrame.Header.curPR.SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curPR, "BackDropTemplate")
 
-    EPGPUserFrame.Header.Name .SortUpButton:SetSize(16, 16)
-    EPGPUserFrame.Header.Class.SortUpButton:SetSize(16, 16)
-    EPGPUserFrame.Header.curEP.SortUpButton:SetSize(16, 16)
-    EPGPUserFrame.Header.curGP.SortUpButton:SetSize(16, 16)
-    EPGPUserFrame.Header.curPR.SortUpButton:SetSize(16, 16)
+    EPGPUserFrame.Header.Name .SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.Class.SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetSize(10, 10)
 
-    EPGPUserFrame.Header.Name .SortDownButton:SetSize(16, 16)
-    EPGPUserFrame.Header.Class.SortDownButton:SetSize(16, 16)
-    EPGPUserFrame.Header.curEP.SortDownButton:SetSize(16, 16)
-    EPGPUserFrame.Header.curGP.SortDownButton:SetSize(16, 16)
-    EPGPUserFrame.Header.curPR.SortDownButton:SetSize(16, 16)
+    EPGPUserFrame.Header.Name .SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.Class.SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetSize(10, 10)
 
     EPGPUserFrame.Header.Name .SortUpButton:SetPoint("LEFT", 4, 5)
     EPGPUserFrame.Header.Class.SortUpButton:SetPoint("LEFT", 4, 5)
@@ -1116,70 +1207,61 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curGP.SortDownButton:SetPoint("LEFT", 4, -3)
     EPGPUserFrame.Header.curPR.SortDownButton:SetPoint("LEFT", 4, -3)
 
-    EPGPUserFrame.Header.Name .SortUpButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-CollapseButton-Up"})
-    EPGPUserFrame.Header.Class.SortUpButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-CollapseButton-Up"})
-    EPGPUserFrame.Header.curEP.SortUpButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-CollapseButton-Up"})
-    EPGPUserFrame.Header.curGP.SortUpButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-CollapseButton-Up"})
-    EPGPUserFrame.Header.curPR.SortUpButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-CollapseButton-Up"})
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture = EPGPUserFrame.Header.Name .SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture = EPGPUserFrame.Header.Class.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture = EPGPUserFrame.Header.curEP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture = EPGPUserFrame.Header.curGP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture = EPGPUserFrame.Header.curPR.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.Name .SortDownButton.Texture = EPGPUserFrame.Header.Name .SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.Class.SortDownButton.Texture = EPGPUserFrame.Header.Class.SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture = EPGPUserFrame.Header.curEP.SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture = EPGPUserFrame.Header.curGP.SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture = EPGPUserFrame.Header.curPR.SortDownButton:CreateTexture(nil, nil)
 
-    EPGPUserFrame.Header.Name .SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
-    EPGPUserFrame.Header.Class.SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
-    EPGPUserFrame.Header.curEP.SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
-    EPGPUserFrame.Header.curGP.SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
-    EPGPUserFrame.Header.curPR.SortDownButton:SetBackdrop({bgFile = "Interface/Buttons/UI-Panel-ExpandButton-Up"})
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.Name .SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.Class.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
 
-    EPGPUserFrame.Header.Name.SortUpButton:SetScript("OnClick", function()
-        sortDirection = "Asc"
-        sortedColumn = "Name"
-        TBCEPGP:FilterPlayers()
-    end)
-    EPGPUserFrame.Header.Class.SortUpButton:SetScript("OnClick", function()
-        sortDirection = "Asc"
-        sortedColumn = "Class"
-        TBCEPGP:FilterPlayers()
-    end)
-    EPGPUserFrame.Header.curEP.SortUpButton:SetScript("OnClick", function()
-        sortDirection = "Asc"
-        sortedColumn = "EP"
-        TBCEPGP:FilterPlayers()
-    end)
-    EPGPUserFrame.Header.curGP.SortUpButton:SetScript("OnClick", function()
-        sortDirection = "Asc"
-        sortedColumn = "GP"
-        TBCEPGP:FilterPlayers() 
-    end)
-    EPGPUserFrame.Header.curPR.SortUpButton:SetScript("OnClick", function()
-        sortDirection = "Asc"
-        sortedColumn = "PR"
-        TBCEPGP:FilterPlayers()
-    end)
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.Name .SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.Class.SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetSize(16, 16)
 
-    -- Sort Down
-    EPGPUserFrame.Header.Name.SortDownButton:SetScript("OnClick", function()
-        sortDirection = "Dsc"
-        sortedColumn = "Name"
-        TBCEPGP:FilterPlayers()
-    end)
-    EPGPUserFrame.Header.Class.SortDownButton:SetScript("OnClick", function()
-        sortDirection = "Dsc"
-        sortedColumn = "Class"
-        TBCEPGP:FilterPlayers()
-    end)
-    EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function()
-        sortDirection = "Dsc"
-        sortedColumn = "EP"
-        TBCEPGP:FilterPlayers()
-    end)
-    EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function()
-        sortDirection = "Dsc"
-        sortedColumn = "GP"
-        TBCEPGP:FilterPlayers() 
-    end)
-    EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function()
-        sortDirection = "Dsc"
-        sortedColumn = "PR"
-        TBCEPGP:FilterPlayers()
-    end)
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Name .SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Class.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+
+    EPGPUserFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
+    EPGPUserFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPUserFrameCloseButton:SetSize(24, 24)
@@ -1198,7 +1280,7 @@ function TBCEPGP:DecayDataTable()
     for key, value in pairs(players) do
         value.EP = TBCEPGP:MathRound(value.EP * 1000 * 0.85) / 1000
         value.GP = TBCEPGP:MathRound(value.GP * 1000 * 0.85) / 1000
-        value.PR = TBCEPGP:CalculatePriority(value.EP, value.GP)
+        value.PR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
     end
     TBCEPGP:FilterPlayers()
 end
@@ -1318,7 +1400,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 curPlayerFrame.changeEP:SetText(0)
 
                 local curPR = nil
-                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
 
@@ -1330,7 +1412,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 curPlayerFrame.changeGP:SetText(0)
 
                 local curPR = nil
-                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
         end
@@ -1357,7 +1439,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         curEP = value.EP
         curGP = value.GP
 
-        curPR = TBCEPGP:CalculatePriority(curEP, curGP)
+        curPR = TBCEPGP:CalculatePriority(key, curEP, curGP)
 
         curPlayerFrame:Show()
 
@@ -1370,14 +1452,13 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         index = index + 1
     end
 
-    if sortedColumn ~= nil then
+    if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            return TBCEPGP:ComparePlayer(filteredPlayerFrames, players, a, b)
+            return TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
         end)
     end
 
     for i, frame in ipairs(filteredPlayerFrames) do
-        print(frame.Name:GetText(), i)
         frame:SetPoint("TOPLEFT", AdminScrollPanel, "TOPLEFT", 5, -24 * i + 25)
     end
 end
@@ -1444,7 +1525,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curEP = value.EP
         curGP = value.GP
 
-        curPR = TBCEPGP:CalculatePriority(curEP, curGP)
+        curPR = TBCEPGP:CalculatePriority(key, curEP, curGP)
 
         curPlayerFrame:Show()
 
@@ -1457,43 +1538,32 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         index = index + 1
     end
 
-    if sortedColumn ~= nil then
+    if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            return TBCEPGP:ComparePlayer(filteredPlayerFrames, players, a, b)
+            return TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
         end)
     end
 
     for i, frame in ipairs(filteredPlayerFrames) do
-        print(frame.Name:GetText(), i)
         frame:SetPoint("TOPLEFT", UserScrollPanel, "TOPLEFT", 5, -24 * i + 25)
     end
 end
 
-function TBCEPGP:ComparePlayer(filteredPlayerFrames, players, a, b)
-    table.sort(filteredPlayerFrames, function(a, b)
-        -- if sortedColumn == "Class" then
-        print("Sort Column", sortColumn)
-        local aSort = players[a.key][sortColumn]
-        local bSort = players[b.key][sortColumn]
-        
+function TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
+        local aSort = players[a.key][sortCol]
+        local bSort = players[b.key][sortCol]
 
-        print(aSort, bSort)
-        if sortDirection == "Asc" then
-            print(string.format("%s > %s = %s", aSort, bSort, tostring(aSort > bSort)))
+        if sortDir == "Asc" then
+            return (aSort < bSort)
+        elseif sortDir == "Dsc" then
             return (aSort > bSort)
-            
-        elseif sortDirection == "Dsc" then
-            print(string.format("%s < %s = %s", aSort, bSort, tostring(aSort < bSort)))
-            return (aSort< bSort)
         end
-        -- end
-    end)
 end
 
-
-function TBCEPGP:CalculatePriority(curEP, curGP)
+function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
     local curPR = nil
-    if curEP == 0 or curGP == 0 then curPR = "-" else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
+    if curEP == 0 or curGP == 0 then curPR = 0 else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
+    TBCEPGP.DataTable.Players[curGUID].PR = curPR
     return curPR
 end
 
