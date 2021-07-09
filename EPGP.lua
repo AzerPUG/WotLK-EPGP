@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 19
+TBCEPGP.Version = 20
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -493,11 +493,6 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP.CreateUserFrame()
     TBCEPGP:CreateFilterButtons()
     ShowAdminViewCheckButton:SetChecked(TBCEPGPShowAdminView)
-    if TBCEPGPShowAdminView == true then
-        EPGPAdminFrame:Show()
-    elseif TBCEPGPShowAdminView == false then
-        EPGPUserFrame:Show()
-    end
     TBCEPGP:ShareVersion()
 end
 
@@ -911,7 +906,7 @@ function TBCEPGP:CreateAdminFrame()
     end)
     EPGPAdminFrame.FilterClassesButton.text = EPGPAdminFrame.FilterClassesButton:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
     EPGPAdminFrame.FilterClassesButton.text:SetPoint("CENTER", 0, 0)
-    EPGPAdminFrame.FilterClassesButton.text:SetText("Class Filter")
+    EPGPAdminFrame.FilterClassesButton.text:SetText("Filters")
     EPGPAdminFrame.FilterClassesButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.FilterClassesButton:SetFrameLevel(4)
 
@@ -950,9 +945,22 @@ function TBCEPGP:CreateAdminFrame()
 
     DecayConfirmWindow:Hide()
 
+    EPGPAdminFrame.OptionsButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
+    EPGPAdminFrame.OptionsButton:SetSize(75, 20)
+    EPGPAdminFrame.OptionsButton:SetPoint("BOTTOMRIGHT", EPGPAdminFrame, "BOTTOMRIGHT", -10, 15)
+    EPGPAdminFrame.OptionsButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.OptionsButton:SetScript("OnClick",
+    function()
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+    end)
+    EPGPAdminFrame.OptionsButton.text = EPGPAdminFrame.OptionsButton:CreateFontString("OptionsButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPAdminFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.OptionsButton.text:SetText("Options")
+
     EPGPAdminFrame.DecayButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
     EPGPAdminFrame.DecayButton:SetSize(75, 20)
-    EPGPAdminFrame.DecayButton:SetPoint("BOTTOMRIGHT", EPGPAdminFrame, "BOTTOMRIGHT", -10, 15)
+    EPGPAdminFrame.DecayButton:SetPoint("Right", EPGPAdminFrame.OptionsButton, "Left", -10, 0)
     EPGPAdminFrame.DecayButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.DecayButton:SetScript("OnClick",
     function()
@@ -1104,6 +1112,18 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.Class.Text:SetTextColor(1, 1, 1, 1)
     EPGPUserFrame.Header.Class.Text:SetText("Class")
 
+    EPGPUserFrame.FilterClassesButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    EPGPUserFrame.FilterClassesButton:SetSize(75, 20)
+    EPGPUserFrame.FilterClassesButton:SetPoint("TOP", EPGPUserFrame.Header.Class, "BOTTOM", 0, -321)
+    EPGPUserFrame.FilterClassesButton:SetFrameStrata("HIGH")
+    EPGPUserFrame.FilterClassesButton:SetScript("OnClick",
+    function()
+        if FilterButtonFrame:IsShown() then FilterButtonFrame:Hide() else FilterButtonFrame:Show() end
+    end)
+    EPGPUserFrame.FilterClassesButton.text = EPGPUserFrame.FilterClassesButton:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPUserFrame.FilterClassesButton.text:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.FilterClassesButton.text:SetText("Filters")
+
     EPGPUserFrame.Header.curEP = CreateFrame("Frame", nil, EPGPUserFrame.Header, "BackdropTemplate")
     EPGPUserFrame.Header.curEP:SetSize(75, 24)
     EPGPUserFrame.Header.curEP:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.Class, "BOTTOMRIGHT", -4, 0)
@@ -1145,18 +1165,6 @@ function TBCEPGP:CreateUserFrame()
         insets = {left = 2, right = 2, top = 2, bottom = 2},
     })
     EPGPUserFrame.Header.curPR:SetBackdropColor(1, 1, 1, 1)
-
-    EPGPUserFrame.FilterClassesButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
-    EPGPUserFrame.FilterClassesButton:SetSize(75, 20)
-    EPGPUserFrame.FilterClassesButton:SetPoint("TOP", EPGPUserFrame.Header.Class, "BOTTOM", 0, -321)
-    EPGPUserFrame.FilterClassesButton:SetFrameStrata("HIGH")
-    EPGPUserFrame.FilterClassesButton:SetScript("OnClick",
-    function()
-        if FilterButtonFrame:IsShown() then FilterButtonFrame:Hide() else FilterButtonFrame:Show() end
-    end)
-    EPGPUserFrame.FilterClassesButton.text = EPGPUserFrame.FilterClassesButton:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
-    EPGPUserFrame.FilterClassesButton.text:SetPoint("CENTER", 0, 0)
-    EPGPUserFrame.FilterClassesButton.text:SetText("Class Filter")
 
     EPGPUserFrame.Header.curPR.Text = EPGPUserFrame.Header.curPR:CreateFontString("EPGPUserFrame.Header.curPR.Text", "ARTWORK", "GameFontNormal")
     EPGPUserFrame.Header.curPR.Text:SetSize(EPGPUserFrame.Header.curPR:GetWidth(), EPGPUserFrame.Header.curPR:GetHeight())
@@ -1262,6 +1270,19 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
     EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
     EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
+    EPGPUserFrame.OptionsButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    EPGPUserFrame.OptionsButton:SetSize(75, 20)
+    EPGPUserFrame.OptionsButton:SetPoint("BOTTOMRIGHT", EPGPUserFrame, "BOTTOMRIGHT", -10, 15)
+    EPGPUserFrame.OptionsButton:SetFrameStrata("HIGH")
+    EPGPUserFrame.OptionsButton:SetScript("OnClick",
+    function()
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+    end)
+    EPGPUserFrame.OptionsButton.text = EPGPUserFrame.OptionsButton:CreateFontString("OptionsButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPUserFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.OptionsButton.text:SetText("Options")
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPUserFrameCloseButton:SetSize(24, 24)
