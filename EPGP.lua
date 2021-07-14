@@ -1,17 +1,16 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 18
+TBCEPGP.Version = 21
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
 local EPGPAdminFrame, AdminScrollPanel = nil, nil
 local adminPlayerFrames, userPlayerFrames = {}, {}
-local sortedColumn, filteredPlayers = nil, nil
+local sortCol, sortDir, filteredPlayers = nil, "Asc", nil
 local addonLoaded, variablesLoaded = false, false
-
--- Stuff To Use?
--- Interface\Artifacts\Artifacts-PerkRing-Final-Mask
+local FilterButtonFrame = nil
+if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
 
 local classNumbers =
 {
@@ -118,14 +117,14 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.showAdminViewCheckButton:SetPoint("TOPLEFT", 25, -175);
     EPGPOptionsPanel.showAdminViewCheckButton:SetScript("OnClick", function()
         TBCEPGPShowAdminView = EPGPOptionsPanel.showAdminViewCheckButton:GetChecked()
-        if TBCEPGPShowAdminView then
+        if TBCEPGPShowAdminView == true then
             EPGPUserFrame:Hide()
             EPGPAdminFrame:Show()
-        else
+        elseif TBCEPGPShowAdminView == false then
             EPGPAdminFrame:Hide()
             EPGPUserFrame:Show()
         end
-        TBCEPGP:filterPlayers()
+        TBCEPGP:FilterPlayers()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
     
@@ -317,6 +316,111 @@ function TBCEPGP:SyncRaidersAddOnMsg()
     print("Sync AddOn Messages Send!")
 end
 
+function TBCEPGP:CreateFilterButtons()
+    EPGPAdminFrame:HookScript("OnShow", function()
+        FilterButtonFrame:SetParent(EPGPAdminFrame.FilterClassesButton)
+        FilterButtonFrame:SetPoint("BOTTOM", EPGPAdminFrame.FilterClassesButton, "TOP")
+    end)
+
+    EPGPUserFrame:HookScript("OnShow", function()
+        FilterButtonFrame:SetParent(EPGPUserFrame.FilterClassesButton)
+        FilterButtonFrame:SetPoint("BOTTOM", EPGPUserFrame.FilterClassesButton, "TOP")
+    end)
+
+    FilterButtonFrame = CreateFrame("FRAME", nil, UIParent, "BackdropTemplate")
+    FilterButtonFrame:SetSize(91, 91)
+    FilterButtonFrame:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 12,
+        insets = { left = 1, right = 1, top = 1, bottom = 1 },
+    })
+    FilterButtonFrame:SetBackdropColor(1, 1, 1, 1)
+    FilterButtonFrame:Hide()
+
+    local FilterButtons = {}
+    for i = 1, 11 do
+        if i == 6 or i == 10 then -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
+        else
+            FilterButtons[i] = CreateFrame("Button", nil, FilterButtonFrame, "BackdropTemplate")
+            FilterButtons[i]:SetSize(25, 25)
+
+            local xOff, yOff = nil, nil
+            if i == 1 or i == 4 or i == 8 then
+                xOff = 5
+            elseif i == 2 or i == 5 or i == 9 then
+                xOff = 33
+            elseif i == 3 or i == 7 or i == 11 then
+                xOff = 61
+            end
+            if i == 1 or i == 2 or i == 3 then
+                yOff = -5
+            elseif i == 4 or i == 5 or i == 7 then
+                yOff = -33
+            elseif i == 8 or i == 9 or i == 11 then
+                yOff = -61
+            end
+
+            FilterButtons[i]:SetPoint("TOPLEFT", xOff, yOff)
+
+            FilterButtons[i]:SetBackdrop({
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                edgeSize = 10,
+                insets = {left = 3, right = 3, top = 3, bottom = 3},
+            })
+
+            FilterButtons[i].Texture = FilterButtons[i]:CreateTexture(nil, nil)
+            FilterButtons[i].Texture:SetSize(FilterButtons[i]:GetWidth(), FilterButtons[i]:GetHeight())
+            FilterButtons[i].Texture:SetPoint("CENTER", 0, 0)
+            FilterButtons[i].Texture:SetTexture("Interface/GLUES/CHARACTERCREATE/UI-CharacterCreate-Classes")
+
+            local CoordX1, CoordX2, CoordY1, CoordY2 = nil, nil, nil, nil
+            if i == 1 or i == 4 or i == 8 or i == 11 then
+                CoordY1 = 0
+                CoordY2 = 0.25
+            elseif i == 3 or i == 5 or i == 7 or i == 9 then
+                CoordY1 = 0.25
+                CoordY2 = 0.5
+            elseif i == 2 then
+                CoordY1 = 0.5
+                CoordY2 = 0.75
+            end
+
+            if i == 1 or i == 2 or i == 3 then
+                CoordX1 = 0
+                CoordX2 = 0.25
+            elseif i == 7 or i == 8 then
+                CoordX1 = 0.25
+                CoordX2 = 0.5
+            elseif i == 4 or i == 5 then
+                CoordX1 = 0.5
+                CoordX2 = 0.75
+            elseif i == 9 or i == 11 then
+                CoordX1 = 0.75
+                CoordX2 = 1
+            end
+
+            FilterButtons[i].Texture:SetTexCoord(CoordX1, CoordX2, CoordY1, CoordY2)
+            FilterButtons[i].Texture:SetDesaturated(true)
+
+            local r, g = 1, 0
+            FilterButtons[i]:SetBackdropColor(1, 0, 0, 1)
+
+            FilterButtons[i]:SetScript("OnClick",
+            function()
+                if filteredClasses[i] then
+                    filteredClasses[i] = false
+                    FilterButtons[i].Texture:SetDesaturated(true)
+                else
+                    filteredClasses[i] = true
+                    FilterButtons[i].Texture:SetDesaturated(false)
+                end
+                TBCEPGP:FilterPlayers(i)
+            end)
+        end
+    end
+end
+
 function TBCEPGP.Events:GroupRosterUpdate()
     TBCEPGP:ShareVersion()
 end
@@ -411,13 +515,8 @@ function TBCEPGP:VarsAndAddonLoaded()
 
     TBCEPGP.CreateAdminFrame()
     TBCEPGP.CreateUserFrame()
-
+    TBCEPGP:CreateFilterButtons()
     ShowAdminViewCheckButton:SetChecked(TBCEPGPShowAdminView)
-    if TBCEPGPShowAdminView then
-        EPGPAdminFrame:Show()
-    else
-        EPGPUserFrame:Show()
-    end
     TBCEPGP:ShareVersion()
 end
 
@@ -626,17 +725,28 @@ function TBCEPGP:CreateAdminFrame()
 
     EPGPAdminFrame.Header.curEP.Text = EPGPAdminFrame.Header.curEP:CreateFontString("EPGPAdminFrame.Header.curEP.Text", "ARTWORK", "GameFontNormal")
     EPGPAdminFrame.Header.curEP.Text:SetSize(EPGPAdminFrame.Header.curEP:GetWidth(), EPGPAdminFrame.Header.curEP:GetHeight())
-    EPGPAdminFrame.Header.curEP.Text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curEP.Text:SetPoint("CENTER", -25, 0)
     EPGPAdminFrame.Header.curEP.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.curEP.Text:SetText("EP")
 
+    EPGPAdminFrame.EPLocked = true
+
+    EPGPAdminFrame.Header.curEP.LockUnlockButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackdropTemplate")
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetSize(25, 25)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetPoint("RIGHT", 0, 0)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetScript("OnClick", function() TBCEPGP:LockUnlockAdminControls("EP") end)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetBackdrop({
+        bgFile = "Interface/Buttons/LockButton-Locked-Up"
+    })
+
     EPGPAdminFrame.Header.curEP.changeEP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curEP, "InputBoxTemplate")
-    EPGPAdminFrame.Header.curEP.changeEP:SetSize(30, 25)
-    EPGPAdminFrame.Header.curEP.changeEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -40, 0)
+    EPGPAdminFrame.Header.curEP.changeEP:SetSize(50, 25)
+    EPGPAdminFrame.Header.curEP.changeEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -75, 0)
     EPGPAdminFrame.Header.curEP.changeEP:SetAutoFocus(false)
     EPGPAdminFrame.Header.curEP.changeEP:SetFrameStrata("HIGH")
     EPGPAdminFrame.Header.curEP.changeEP:SetText(0)
     EPGPAdminFrame.Header.curEP.changeEP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("EP") end)
+    EPGPAdminFrame.Header.curEP.changeEP:Hide()
 
     EPGPAdminFrame.Header.curGP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.curGP:SetSize(175, 24)
@@ -648,19 +758,30 @@ function TBCEPGP:CreateAdminFrame()
     })
     EPGPAdminFrame.Header.curGP:SetBackdropColor(1, 1, 1, 1)
 
+    EPGPAdminFrame.GPLocked = true
+
+    EPGPAdminFrame.Header.curGP.LockUnlockButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackdropTemplate")
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetSize(25, 25)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetPoint("RIGHT", 0, 0)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetScript("OnClick", function() TBCEPGP:LockUnlockAdminControls("GP") end)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetBackdrop({
+        bgFile = "Interface/Buttons/LockButton-Locked-Up"
+    })
+
     EPGPAdminFrame.Header.curGP.Text = EPGPAdminFrame.Header.curGP:CreateFontString("EPGPAdminFrame.Header.curGP.Text", "ARTWORK", "GameFontNormal")
     EPGPAdminFrame.Header.curGP.Text:SetSize(EPGPAdminFrame.Header.curGP:GetWidth(), EPGPAdminFrame.Header.curGP:GetHeight())
-    EPGPAdminFrame.Header.curGP.Text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curGP.Text:SetPoint("CENTER", -25, 0)
     EPGPAdminFrame.Header.curGP.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.curGP.Text:SetText("GP")
 
     EPGPAdminFrame.Header.curGP.changeGP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curGP, "InputBoxTemplate")
-    EPGPAdminFrame.Header.curGP.changeGP:SetSize(30, 25)
-    EPGPAdminFrame.Header.curGP.changeGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curGP, "BOTTOMRIGHT", -40, 0)
+    EPGPAdminFrame.Header.curGP.changeGP:SetSize(50, 25)
+    EPGPAdminFrame.Header.curGP.changeGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curGP, "BOTTOMRIGHT", -75, 0)
     EPGPAdminFrame.Header.curGP.changeGP:SetAutoFocus(false)
     EPGPAdminFrame.Header.curGP.changeGP:SetFrameStrata("HIGH")
     EPGPAdminFrame.Header.curGP.changeGP:SetText(0)
     EPGPAdminFrame.Header.curGP.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
+    EPGPAdminFrame.Header.curGP.changeGP:Hide()
 
     EPGPAdminFrame.Header.curPR = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.curPR:SetSize(75, 24)
@@ -685,6 +806,98 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curGP.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPAdminFrame.Header.curPR.Text:SetFont(curFont, curSize - 2, curFlags)
 
+    EPGPAdminFrame.Header.Name .SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header .Name, "BackDropTemplate")
+    EPGPAdminFrame.Header.Class.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.Class, "BackDropTemplate")
+    EPGPAdminFrame.Header.curEP.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curGP.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curPR.SortUpButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curPR, "BackDropTemplate")
+
+    EPGPAdminFrame.Header.Name .SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header .Name, "BackDropTemplate")
+    EPGPAdminFrame.Header.Class.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.Class, "BackDropTemplate")
+    EPGPAdminFrame.Header.curEP.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curGP.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackDropTemplate")
+    EPGPAdminFrame.Header.curPR.SortDownButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curPR, "BackDropTemplate")
+
+    EPGPAdminFrame.Header.Name .SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetSize(10, 10)
+
+    EPGPAdminFrame.Header.Name .SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetSize(10, 10)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetSize(10, 10)
+
+    EPGPAdminFrame.Header.Name .SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetPoint("LEFT", 4, 5)
+
+    EPGPAdminFrame.Header.Name .SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetPoint("LEFT", 4, -3)
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture = EPGPAdminFrame.Header.Name .SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture = EPGPAdminFrame.Header.Class.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture = EPGPAdminFrame.Header.curEP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture = EPGPAdminFrame.Header.curGP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture = EPGPAdminFrame.Header.curPR.SortUpButton  :CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture = EPGPAdminFrame.Header.Name .SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture = EPGPAdminFrame.Header.Class.SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture = EPGPAdminFrame.Header.curEP.SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture = EPGPAdminFrame.Header.curGP.SortDownButton:CreateTexture(nil, nil)
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture = EPGPAdminFrame.Header.curPR.SortDownButton:CreateTexture(nil, nil)
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetSize(16, 16)
+
+    EPGPAdminFrame.Header.Name .SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Class.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curEP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curGP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curPR.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Name .SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Class.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curEP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+
+    EPGPAdminFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
+    EPGPAdminFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
     local EPGPAdminFrameCloseButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPAdminFrameCloseButton:SetSize(24, 24)
     EPGPAdminFrameCloseButton:SetPoint("TOPRIGHT", EPGPAdminFrame, "TOPRIGHT", -3, -3)
@@ -706,6 +919,20 @@ function TBCEPGP:CreateAdminFrame()
     AddToDataBaseButton.text = AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
     AddToDataBaseButton.text:SetPoint("CENTER", 0, 0)
     AddToDataBaseButton.text:SetText("Add Target")
+
+    EPGPAdminFrame.FilterClassesButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
+    EPGPAdminFrame.FilterClassesButton:SetSize(75, 20)
+    EPGPAdminFrame.FilterClassesButton:SetPoint("TOP", EPGPAdminFrame.Header.Class, "BOTTOM", 0, -321)
+    EPGPAdminFrame.FilterClassesButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.FilterClassesButton:SetScript("OnClick",
+    function()
+        if FilterButtonFrame:IsShown() then FilterButtonFrame:Hide() else FilterButtonFrame:Show() end
+    end)
+    EPGPAdminFrame.FilterClassesButton.text = EPGPAdminFrame.FilterClassesButton:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPAdminFrame.FilterClassesButton.text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.FilterClassesButton.text:SetText("Filters")
+    EPGPAdminFrame.FilterClassesButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.FilterClassesButton:SetFrameLevel(4)
 
     local DecayConfirmWindow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     DecayConfirmWindow:SetSize(300, 150)
@@ -742,9 +969,22 @@ function TBCEPGP:CreateAdminFrame()
 
     DecayConfirmWindow:Hide()
 
+    EPGPAdminFrame.OptionsButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
+    EPGPAdminFrame.OptionsButton:SetSize(75, 20)
+    EPGPAdminFrame.OptionsButton:SetPoint("BOTTOMRIGHT", EPGPAdminFrame, "BOTTOMRIGHT", -10, 15)
+    EPGPAdminFrame.OptionsButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.OptionsButton:SetScript("OnClick",
+    function()
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+    end)
+    EPGPAdminFrame.OptionsButton.text = EPGPAdminFrame.OptionsButton:CreateFontString("OptionsButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPAdminFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.OptionsButton.text:SetText("Options")
+
     EPGPAdminFrame.DecayButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
     EPGPAdminFrame.DecayButton:SetSize(75, 20)
-    EPGPAdminFrame.DecayButton:SetPoint("BOTTOMRIGHT", EPGPAdminFrame, "BOTTOMRIGHT", -10, 15)
+    EPGPAdminFrame.DecayButton:SetPoint("Right", EPGPAdminFrame.OptionsButton, "Left", -10, 0)
     EPGPAdminFrame.DecayButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.DecayButton:SetScript("OnClick",
     function()
@@ -773,6 +1013,19 @@ function TBCEPGP:CreateAdminFrame()
     scrollFrame:SetScrollChild(AdminScrollPanel)
 
     EPGPAdminFrame:Hide()
+end
+
+function TBCEPGP:LockUnlockAdminControls(Points)
+    if EPGPAdminFrame[Points .. "Locked"] == true then
+        EPGPAdminFrame[Points .. "Locked"] = false
+        EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:Show()
+        EPGPAdminFrame.Header["cur" .. Points].LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Unlocked-Up"})
+    elseif EPGPAdminFrame[Points .. "Locked"] == false then
+        EPGPAdminFrame[Points .. "Locked"] = true
+        EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:Hide()
+        EPGPAdminFrame.Header["cur" .. Points].LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Locked-Up"})
+    end
+    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
 function TBCEPGP:CreateUserFrame()
@@ -883,6 +1136,18 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.Class.Text:SetTextColor(1, 1, 1, 1)
     EPGPUserFrame.Header.Class.Text:SetText("Class")
 
+    EPGPUserFrame.FilterClassesButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    EPGPUserFrame.FilterClassesButton:SetSize(75, 20)
+    EPGPUserFrame.FilterClassesButton:SetPoint("TOP", EPGPUserFrame.Header.Class, "BOTTOM", 0, -321)
+    EPGPUserFrame.FilterClassesButton:SetFrameStrata("HIGH")
+    EPGPUserFrame.FilterClassesButton:SetScript("OnClick",
+    function()
+        if FilterButtonFrame:IsShown() then FilterButtonFrame:Hide() else FilterButtonFrame:Show() end
+    end)
+    EPGPUserFrame.FilterClassesButton.text = EPGPUserFrame.FilterClassesButton:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPUserFrame.FilterClassesButton.text:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.FilterClassesButton.text:SetText("Filters")
+
     EPGPUserFrame.Header.curEP = CreateFrame("Frame", nil, EPGPUserFrame.Header, "BackdropTemplate")
     EPGPUserFrame.Header.curEP:SetSize(75, 24)
     EPGPUserFrame.Header.curEP:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.Class, "BOTTOMRIGHT", -4, 0)
@@ -932,11 +1197,116 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curPR.Text:SetText("PR")
 
     local curFont, curSize, curFlags = EPGPUserFrame.Header.Name.Text:GetFont()
-    EPGPUserFrame.Header.Name.Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPUserFrame.Header.Name .Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.Class.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.curEP.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.curGP.Text:SetFont(curFont, curSize - 2, curFlags)
     EPGPUserFrame.Header.curPR.Text:SetFont(curFont, curSize - 2, curFlags)
+
+    EPGPUserFrame.Header.Name .SortUpButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header .Name, "BackDropTemplate")
+    EPGPUserFrame.Header.Class.SortUpButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.Class, "BackDropTemplate")
+    EPGPUserFrame.Header.curEP.SortUpButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curEP, "BackDropTemplate")
+    EPGPUserFrame.Header.curGP.SortUpButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curGP, "BackDropTemplate")
+    EPGPUserFrame.Header.curPR.SortUpButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curPR, "BackDropTemplate")
+
+    EPGPUserFrame.Header.Name .SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header .Name, "BackDropTemplate")
+    EPGPUserFrame.Header.Class.SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.Class, "BackDropTemplate")
+    EPGPUserFrame.Header.curEP.SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curEP, "BackDropTemplate")
+    EPGPUserFrame.Header.curGP.SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curGP, "BackDropTemplate")
+    EPGPUserFrame.Header.curPR.SortDownButton = CreateFrame("BUTTON", nil, EPGPUserFrame.Header.curPR, "BackDropTemplate")
+
+    EPGPUserFrame.Header.Name .SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.Class.SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetSize(10, 10)
+
+    EPGPUserFrame.Header.Name .SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.Class.SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetSize(10, 10)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetSize(10, 10)
+
+    EPGPUserFrame.Header.Name .SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPUserFrame.Header.Class.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetPoint("LEFT", 4, 5)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetPoint("LEFT", 4, 5)
+
+    EPGPUserFrame.Header.Name .SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPUserFrame.Header.Class.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetPoint("LEFT", 4, -3)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetPoint("LEFT", 4, -3)
+
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture = EPGPUserFrame.Header.Name .SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture = EPGPUserFrame.Header.Class.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture = EPGPUserFrame.Header.curEP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture = EPGPUserFrame.Header.curGP.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture = EPGPUserFrame.Header.curPR.SortUpButton  :CreateTexture(nil, nil)
+    EPGPUserFrame.Header.Name .SortDownButton.Texture = EPGPUserFrame.Header.Name .SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.Class.SortDownButton.Texture = EPGPUserFrame.Header.Class.SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture = EPGPUserFrame.Header.curEP.SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture = EPGPUserFrame.Header.curGP.SortDownButton:CreateTexture(nil, nil)
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture = EPGPUserFrame.Header.curPR.SortDownButton:CreateTexture(nil, nil)
+
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture:SetTexture("Interface/Buttons/UI-Panel-CollapseButton-Up")
+    EPGPUserFrame.Header.Name .SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.Class.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetTexture("Interface/Buttons/UI-Panel-ExpandButton-Up")
+
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.Name .SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.Class.SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetSize(16, 16)
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetSize(16, 16)
+
+    EPGPUserFrame.Header.Name .SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Class.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curEP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curGP.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curPR.SortUpButton  .Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Name .SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Class.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curEP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
+
+    EPGPUserFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
+    EPGPUserFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+
+    EPGPUserFrame.OptionsButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    EPGPUserFrame.OptionsButton:SetSize(75, 20)
+    EPGPUserFrame.OptionsButton:SetPoint("BOTTOMRIGHT", EPGPUserFrame, "BOTTOMRIGHT", -10, 15)
+    EPGPUserFrame.OptionsButton:SetFrameStrata("HIGH")
+    EPGPUserFrame.OptionsButton:SetScript("OnClick",
+    function()
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+    end)
+    EPGPUserFrame.OptionsButton.text = EPGPUserFrame.OptionsButton:CreateFontString("OptionsButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPUserFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.OptionsButton.text:SetText("Options")
 
     local EPGPUserFrameCloseButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPUserFrameCloseButton:SetSize(24, 24)
@@ -955,9 +1325,9 @@ function TBCEPGP:DecayDataTable()
     for key, value in pairs(players) do
         value.EP = TBCEPGP:MathRound(value.EP * 1000 * 0.85) / 1000
         value.GP = TBCEPGP:MathRound(value.GP * 1000 * 0.85) / 1000
-        value.PR = TBCEPGP:CalculatePriority(value.EP, value.GP)
+        value.PR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
     end
-    TBCEPGP:filterPlayers()
+    TBCEPGP:FilterPlayers()
 end
 
 function TBCEPGP:MassChange(Points)
@@ -975,7 +1345,7 @@ function TBCEPGP:MassChange(Points)
     end
 end
 
-function TBCEPGP:filterPlayers()
+function TBCEPGP:FilterPlayers()
     filteredPlayers = {}
     local players = TBCEPGPDataTable.Players
     for key, value in pairs(players) do
@@ -1040,12 +1410,12 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
             curPlayerFrame.curEP = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.curEP:SetSize(EPGPAdminFrame.Header.curEP:GetWidth(), 25)
-            curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", -4, 0)
+            curPlayerFrame.curEP:SetPoint("LEFT", curPlayerFrame.Class, "RIGHT", -29, 0)
             curPlayerFrame.curEP:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.changeEP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
-            curPlayerFrame.changeEP:SetSize(30, 25)
-            curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -40, 0)
+            curPlayerFrame.changeEP:SetSize(50, 25)
+            curPlayerFrame.changeEP:SetPoint("LEFT", curPlayerFrame.curEP, "RIGHT", -50, 0)
             curPlayerFrame.changeEP:SetAutoFocus(false)
             curPlayerFrame.changeEP:SetFrameStrata("HIGH")
             curPlayerFrame.changeEP:SetText(0)
@@ -1056,14 +1426,14 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.curGP:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.changeGP = CreateFrame("EditBox", nil, curPlayerFrame, "InputBoxTemplate")
-            curPlayerFrame.changeGP:SetSize(30, 25)
-            curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -40, 0)
+            curPlayerFrame.changeGP:SetSize(50, 25)
+            curPlayerFrame.changeGP:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -50, 0)
             curPlayerFrame.changeGP:SetAutoFocus(false)
             curPlayerFrame.changeGP:SetFrameStrata("HIGH")
             curPlayerFrame.changeGP:SetText(0)
 
             curPlayerFrame.curPR = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
-            curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth(), 25)
+            curPlayerFrame.curPR:SetSize(EPGPAdminFrame.Header.curPR:GetWidth() + 50, 25)
             curPlayerFrame.curPR:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -4, 0)
             curPlayerFrame.curPR:SetTextColor(1, 1, 1, 1)
 
@@ -1075,7 +1445,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 curPlayerFrame.changeEP:SetText(0)
 
                 local curPR = nil
-                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
 
@@ -1087,9 +1457,21 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 curPlayerFrame.changeGP:SetText(0)
 
                 local curPR = nil
-                curPR = TBCEPGP:CalculatePriority(players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
+        end
+
+        if EPGPAdminFrame.EPLocked == true then
+            curPlayerFrame.changeEP:Hide()
+        elseif EPGPAdminFrame.EPLocked == false then
+            curPlayerFrame.changeEP:Show()
+        end
+
+        if EPGPAdminFrame.GPLocked == true then
+            curPlayerFrame.changeGP:Hide()
+        elseif EPGPAdminFrame.GPLocked == false then
+            curPlayerFrame.changeGP:Show()
         end
 
         filteredPlayerFrames[index] = curPlayerFrame
@@ -1102,7 +1484,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         curEP = value.EP
         curGP = value.GP
 
-        curPR = TBCEPGP:CalculatePriority(curEP, curGP)
+        curPR = TBCEPGP:CalculatePriority(key, curEP, curGP)
 
         curPlayerFrame:Show()
 
@@ -1115,16 +1497,14 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         index = index + 1
     end
 
-    if sortedColumn ~= nil then
+    if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            if sortedColumn == "Class" then
-                return players[a.key].Class > players[b.key].Class
-            end
+            return TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
         end)
     end
 
-    for j, frame in pairs(filteredPlayerFrames) do
-        frame:SetPoint("TOPLEFT", AdminScrollPanel, "TOPLEFT", 5, -24 * j + 25)
+    for i, frame in ipairs(filteredPlayerFrames) do
+        frame:SetPoint("TOPLEFT", AdminScrollPanel, "TOPLEFT", 5, -24 * i + 25)
     end
 end
 
@@ -1190,7 +1570,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curEP = value.EP
         curGP = value.GP
 
-        curPR = TBCEPGP:CalculatePriority(curEP, curGP)
+        curPR = TBCEPGP:CalculatePriority(key, curEP, curGP)
 
         curPlayerFrame:Show()
 
@@ -1203,22 +1583,32 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         index = index + 1
     end
 
-    if sortedColumn ~= nil then
+    if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            if sortedColumn == "Class" then
-                return players[a.key].Class > players[b.key].Class
-            end
+            return TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
         end)
     end
 
-    for j, frame in pairs(filteredPlayerFrames) do
-        frame:SetPoint("TOPLEFT", UserScrollPanel, "TOPLEFT", 5, -24 * j + 25)
+    for i, frame in ipairs(filteredPlayerFrames) do
+        frame:SetPoint("TOPLEFT", UserScrollPanel, "TOPLEFT", 5, -24 * i + 25)
     end
 end
 
-function TBCEPGP:CalculatePriority(curEP, curGP)
+function TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
+        local aSort = players[a.key][sortCol]
+        local bSort = players[b.key][sortCol]
+
+        if sortDir == "Asc" then
+            return (aSort < bSort)
+        elseif sortDir == "Dsc" then
+            return (aSort > bSort)
+        end
+end
+
+function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
     local curPR = nil
-    if curEP == 0 or curGP == 0 then curPR = "-" else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
+    if curEP == 0 or curGP == 0 then curPR = 0 else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
+    TBCEPGP.DataTable.Players[curGUID].PR = curPR
     return curPR
 end
 
@@ -1233,6 +1623,8 @@ function TBCEPGP.Events:EncounterStart()
             TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
         end
     end
+    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
+    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
 TBCEPGP:OnLoad()
@@ -1254,9 +1646,18 @@ TBCEPGP.SlashCommands["add"] = function(value)
 end
 
 TBCEPGP.SlashCommands["show"] = function(value)
-    if TBCEPGPShowAdminView then
+    if TBCEPGPShowAdminView == true then
         EPGPAdminFrame:Show()
-    else
+    elseif TBCEPGPShowAdminView == false then
         EPGPUserFrame:Show()
     end
 end
+
+TBCEPGP.SlashCommands["Roll"] = TBCEPGP.SlashCommands["roll"]
+TBCEPGP.SlashCommands["ROLL"] = TBCEPGP.SlashCommands["roll"]
+TBCEPGP.SlashCommands["Sync"] = TBCEPGP.SlashCommands["sync"]
+TBCEPGP.SlashCommands["SYNC"] = TBCEPGP.SlashCommands["sync"]
+TBCEPGP.SlashCommands["Add"] = TBCEPGP.SlashCommands["add"]
+TBCEPGP.SlashCommands["ADD"] = TBCEPGP.SlashCommands["add"]
+TBCEPGP.SlashCommands["Show"] = TBCEPGP.SlashCommands["show"]
+TBCEPGP.SlashCommands["SHOW"] = TBCEPGP.SlashCommands["show"]

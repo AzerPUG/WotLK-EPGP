@@ -1,9 +1,8 @@
-## Interface: 90005
+## Interface: 39170
 ## Title: TBC-EPGP
 ## Author: Tex & AzerPUG Gaming Community (www.azerpug.com/discord)
 ## Notes: RubyBlaze smacked Tex in the face with a pile of money, out of spite, Tex casted 'CreateAddon' on RubyBlaze. It was very effective!
-## SavedVariables: TBCEPGPDataTable
-## SavedVariablesPerCharacter: TBCEPGPAdminList, TBCEPGPShowAdminView
+## SavedVariablesPerCharacter: TBCEPGPDataTable, TBCEPGPAdminList, TBCEPGPShowAdminView
 
 SlashCommand.lua
 DataTables.lua
