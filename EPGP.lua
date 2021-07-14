@@ -128,8 +128,23 @@ function TBCEPGP:OnLoad()
         TBCEPGP:filterPlayers()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
+    
+    TBCEPGP:AddTooltipScript()
 
     EPGPOptionsPanel:Hide()
+end
+
+function TBCEPGP:AddTooltipScript()
+    GameTooltip:HookScript("OnTooltipSetItem", function(...)
+        local _, itemLink = GameTooltip:GetItem()
+        local itemName, _, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(itemLink)
+
+        if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
+            local price = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+            price = TBCEPGP:MathRound(price * 1000) / 1000
+            GameTooltip:AddLine("TBC-EPGP: " .. price .. "GP")
+        end
+    end)
 end
 
 function TBCEPGP:splitCharacterNames(input)
@@ -200,13 +215,21 @@ function TBCEPGP:GetNumericMonth(month)
 end
 
 function TBCEPGP:GetQualityMultiplier(quality, iLevel)
-    local multiplier = TBCEPGP.InfoTable.Quality[quality](iLevel)
-    return multiplier
+    if quality ~= 0 and quality ~= 1 then
+        local multiplier = TBCEPGP.InfoTable.Quality[quality](iLevel)
+        return multiplier
+    else
+        return 1
+    end
 end
 
-function TBCEPGP:GetSlotMultiplier(slot)
-    local multiplier = TBCEPGP.InfoTable.Slot[slot]
-    return multiplier
+function TBCEPGP:GetSlotMultiplier(slot)    
+    if TBCEPGP.InfoTable.Slot[slot] ~= nil then
+        local multiplier = TBCEPGP.InfoTable.Slot[slot]
+        return multiplier
+    else
+        return 1
+    end
 end
 
 function TBCEPGP:CalculateTotalPrice(quality, slot, iLevel)
@@ -215,9 +238,7 @@ function TBCEPGP:CalculateTotalPrice(quality, slot, iLevel)
     SMulty = TBCEPGP:GetSlotMultiplier(slot)
 
     CalcPrice = QMulty * QMulty * 0.04 * SMulty
-    print("Total Price:", CalcPrice)
-    TotalPrice = TBCEPGP:MathRound(CalcPrice)
-    return TotalPrice
+    return CalcPrice
 end
 
 function TBCEPGP:MathRound(value)
@@ -230,11 +251,14 @@ function TBCEPGP:RollItem(inputLink)
     else
         local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(inputLink)
         if itemEquipLoc == nil or itemEquipLoc == "" then itemEquipLoc = "Not Equipable!" end
+        local totalPrice = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+        local roundedPrice = TBCEPGP:MathRound(totalPrice)
         print("EPGP Rolling Item:", itemLink)
         print("iLevel:", itemLevel, " - Quality:", itemQuality, " - Slot:", itemEquipLoc)
         print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemQuality, itemLevel))
         print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemEquipLoc))
-        print("Rounded Price:", TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel))
+        print("Total Price:", totalPrice)
+        print("Rounded Price:", roundedPrice)
     end
 end
 
