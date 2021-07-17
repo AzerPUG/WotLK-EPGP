@@ -10,6 +10,7 @@ local adminPlayerFrames, userPlayerFrames = {}, {}
 local sortCol, sortDir, filteredPlayers = nil, "Asc", nil
 local addonLoaded, variablesLoaded = false, false
 local FilterButtonFrame = nil
+local FilterRaid = false
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
 
 local classNumbers =
@@ -328,7 +329,7 @@ function TBCEPGP:CreateFilterButtons()
     end)
 
     FilterButtonFrame = CreateFrame("FRAME", nil, UIParent, "BackdropTemplate")
-    FilterButtonFrame:SetSize(91, 91)
+    FilterButtonFrame:SetSize(91, 115)
     FilterButtonFrame:SetBackdrop({
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -337,6 +338,20 @@ function TBCEPGP:CreateFilterButtons()
     })
     FilterButtonFrame:SetBackdropColor(1, 1, 1, 1)
     FilterButtonFrame:Hide()
+    FilterButtonFrame.FilterRaidGroup = CreateFrame("Button", nil, FilterButtonFrame, "UIPanelButtonTemplate")
+    FilterButtonFrame.FilterRaidGroup:SetSize(81, 20)
+    FilterButtonFrame.FilterRaidGroup:SetPoint("TOP", 0, -5)
+    FilterButtonFrame.FilterRaidGroup:SetFrameStrata("HIGH")
+    FilterButtonFrame.FilterRaidGroup:SetScript("OnClick",
+    function()
+        FilterRaid = not FilterRaid
+        TBCEPGP:FilterPlayers()
+    end)
+    FilterButtonFrame.FilterRaidGroup.text = FilterButtonFrame.FilterRaidGroup:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
+    FilterButtonFrame.FilterRaidGroup.text:SetPoint("CENTER", 0, 0)
+    FilterButtonFrame.FilterRaidGroup.text:SetText("Filter Raid")
+    FilterButtonFrame.FilterRaidGroup:SetFrameStrata("HIGH")
+    FilterButtonFrame.FilterRaidGroup:SetFrameLevel(4)
 
     local FilterButtons = {}
     for i = 1, 11 do
@@ -354,11 +369,11 @@ function TBCEPGP:CreateFilterButtons()
                 xOff = 61
             end
             if i == 1 or i == 2 or i == 3 then
-                yOff = -5
+                yOff = -30
             elseif i == 4 or i == 5 or i == 7 then
-                yOff = -33
+                yOff = -58
             elseif i == 8 or i == 9 or i == 11 then
-                yOff = -61
+                yOff = -86
             end
 
             FilterButtons[i]:SetPoint("TOPLEFT", xOff, yOff)
@@ -423,6 +438,17 @@ end
 
 function TBCEPGP.Events:GroupRosterUpdate()
     TBCEPGP:ShareVersion()
+end
+
+function TBCEPGP:CollectPlayersInRaid()
+    local playerNames = {}
+    for i=1,40 do
+        local name = UnitGUID("raid" .. i)
+        if name ~= nil then
+            tinsert(playerNames, name)
+        end
+    end
+    return playerNames
 end
 
 function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
@@ -1348,6 +1374,8 @@ end
 function TBCEPGP:FilterPlayers()
     filteredPlayers = {}
     local players = TBCEPGPDataTable.Players
+    local raidGUIDs = TBCEPGP:CollectPlayersInRaid()
+
     for key, value in pairs(players) do
         for i = 1, 11 do
             if i == 6 or i == 10 then -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
@@ -1367,7 +1395,22 @@ function TBCEPGP:FilterPlayers()
             if filteredClasses[i] == true then allFiltersOff = false end
         end
     end
+
     if allFiltersOff == true then filteredPlayers = players end
+    
+
+    if FilterRaid == true then
+        local raidPlayers = {}
+        
+        for _, GUID in ipairs(raidGUIDs) do
+            if filteredPlayers[GUID] ~= nil then
+                raidPlayers[GUID] = filteredPlayers[GUID]
+            end
+        end
+
+        filteredPlayers = raidPlayers
+    end
+
     TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
     TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
