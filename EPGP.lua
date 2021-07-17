@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 21
+TBCEPGP.Version = 22
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
