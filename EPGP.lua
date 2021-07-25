@@ -714,7 +714,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
     elseif prefix == "TBCEPGPItem" then
         local subPayload = payload
         -- local itemName = nil
-        local itemName, itemTexture, itemLink = string.match(payload, "Item:(^:*):(^:*):(.*):$")
+        local itemName, itemTexture, itemLink = string.match(payload, "Item:([^:]*):([^:]*):(.*):$")
         -- if subPayload ~= nil then
         --     subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
         --     local stringFind = string.find(subPayload, ":", 1)
