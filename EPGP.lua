@@ -713,8 +713,8 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         end
     elseif prefix == "TBCEPGPItem" then
         local subPayload = payload
-        local itemName = nil
-        itemName = string.match(payload, "Item:(.*):$")
+        -- local itemName = nil
+        local itemName, itemTexture, itemLink = string.match(payload, "Item:(^:*):(^:*):(.*):$")
         -- if subPayload ~= nil then
         --     subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
         --     local stringFind = string.find(subPayload, ":", 1)
@@ -723,7 +723,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         --     end
         -- end
         print("TBCEPGPItem:", itemName)
-        TBCEPGP:AddItemToLootList(itemName)
+        TBCEPGP:AddItemToLootList(itemName, itemTexture, itemLink)
     elseif prefix == "TBCEPGPRoll" then
         local subPayload = payload
         local subStringList = {}
@@ -1908,9 +1908,7 @@ function TBCEPGP.Events:LootOpened()
             local _, lootName, lootQuantity, _, lootQuality, _, isQuestItem, _, isActive = GetLootSlotInfo(i)
             if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 1 then   -- XXX Add and 'lootQuality >= 2' to only include green and above.
                 print(lootQuantity .. "x", lootName)
-                local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
-                itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(lootName)
-                TBCEPGP:LootItemAddOnMsg(itemLink)
+                TBCEPGP:LootItemAddOnMsg(lootName)
             end
         end
         --TBCEPGP:FillLootFrameScrollPanel()
@@ -1924,10 +1922,8 @@ function TBCEPGP.Events:LootOpened()
 
 end
 
-function TBCEPGP:AddItemToLootList(itemLink)
+function TBCEPGP:AddItemToLootList(itemName, itemTexture, itemLink)
     EPGPLootFrame:Show()
-    local itemName, _, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
-    itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemLink)
 
     print(itemName, itemLink, itemTexture)
 
@@ -1944,6 +1940,20 @@ function TBCEPGP:AddItemToLootList(itemLink)
     --end
     TBCEPGP:FillLootFrameScrollPanel()
 end
+
+function TBCEPGP:GetItemInfo(itemLink)
+    local itemName, _, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
+    itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemLink)
+
+    if itemName == nil then
+        C_Timer.After(1, function() 
+            TBCEPGP:GetItemInfo(itemLink)
+        end)
+    else
+        AddItemToLootList(itemLink, itemName, itemTexture)
+    end
+end
+
 
 function TBCEPGP:AddPlayerToItem(Roll, Index, GUID)
     local PR = TBCEPGPDataTable.Players[GUID].PR
@@ -2059,9 +2069,12 @@ function TBCEPGP:LootRollAddOnMsg(Roll, Index)
     C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
 end
 
-function TBCEPGP:LootItemAddOnMsg(itemLink)
+function TBCEPGP:LootItemAddOnMsg(itemName)
+    local _, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
+    itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemName)
+
     local prefix = "TBCEPGPItem"
-    local message = "Item:" .. itemLink .. ":"
+    local message = "Item:" .. itemName .. ":" .. itemTexture .. ":" .. itemLink .. ":"
     C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
 end
 
