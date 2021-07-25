@@ -43,7 +43,8 @@ local filteredClasses =
 
 function TBCEPGP:OnLoad()
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
-    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPLoot")
+    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPItem")
+    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPRoll")
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPVersion")
 
     EventFrame = CreateFrame("Frame", nil, UIParent)
@@ -710,7 +711,20 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                 end
             end
         end
-    elseif prefix == "TBCEPGPLoot" then
+    elseif prefix == "TBCEPGPItem" then
+        local subPayload = payload
+        local itemName = nil
+
+        if subPayload ~= nil then
+            subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
+            local stringFind = string.find(subPayload, ":", 1)
+            if stringFind ~= nil then
+                itemName = string.sub(subPayload, 0, stringFind - 1)
+            end
+        end
+        print("TBCEPGPItem:", itemName)
+        TBCEPGP:AddItemToLootList(itemName)
+    elseif prefix == "TBCEPGPRoll" then
         local subPayload = payload
         local subStringList = {}
 
@@ -725,7 +739,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         end
         subStringList[2] = tonumber(subStringList[2])
 
-        TBCEPGP:AddNameToItem(subStringList[1], subStringList[2], subStringList[3])
+        TBCEPGP:AddPlayerToItem(subStringList[1], subStringList[2], subStringList[3])
     end
 end
 
@@ -1887,41 +1901,50 @@ function TBCEPGP.Events:EncounterStart()
 end
 
 function TBCEPGP.Events:LootOpened()
-    -- lootmethod, _, MLRaidIndex = GetLootMethod()
+    local lootmethod, _, MLRaidIndex = GetLootMethod()
+
+    if lootmethod == "master" and MLRaidIndex == UnitInRaid("player") then
+        for i = 1, GetNumLootItems() do
+            local _, lootName, lootQuantity, _, lootQuality, _, isQuestItem, _, isActive = GetLootSlotInfo(i)
+            if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 1 then   -- XXX Add and 'lootQuality >= 2' to only include green and above.
+                print(lootQuantity .. "x", lootName)
+                --TBCEPGP:AddItemToLootList(lootName)
+                TBCEPGP:LootItemAddOnMsg(lootName)
+            end
+        end
+        --TBCEPGP:FillLootFrameScrollPanel()
+    end
     -- Check is lootmethod == master loot.
     -- check if current player == master looter.
         -- MLRaidIndex == RaidN for the specific master looter.
         -- Loop over all and check if RaidN for player == MLRaidIndex
     -- If ML opens loot, send over AddOn Channel    "Item:" .. ItemName .. ":"
 
-    for i = 1, GetNumLootItems() do
-        local _, lootName, lootQuantity, _, lootQuality, _, isQuestItem, _, isActive = GetLootSlotInfo(i)
-        if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 1 then   -- XXX Add and 'lootQuality >= 2' to only include green and above.
-            print(lootQuantity .. "x", lootName)
-            EPGPLootFrame:Show()
 
-            local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
-            itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(lootName)
+end
 
-            print(itemName, itemLink, itemTexture)
+function TBCEPGP:AddItemToLootList(itemName)
+    EPGPLootFrame:Show()
+    local _, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
+    itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemName)
 
-            --if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
-                EPGPActiveLootItems[#EPGPActiveLootItems + 1] =
-                {
-                    name = itemName,
-                    link = itemLink,
-                    texture = itemTexture,
-                    --GPValue = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel),
-                    GPValue = 1.234,
-                    players = {Need = {}, Greed = {},},
-                }
-            --end
-        end
-    end
+    --print(itemName, itemLink, itemTexture)
+
+    --if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
+        EPGPActiveLootItems[#EPGPActiveLootItems + 1] =
+        {
+            name = itemName,
+            link = itemLink,
+            texture = itemTexture,
+            --GPValue = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel),
+            GPValue = 1.234,
+            players = {Need = {}, Greed = {},},
+        }
+    --end
     TBCEPGP:FillLootFrameScrollPanel()
 end
 
-function TBCEPGP:AddNameToItem(Roll, Index, GUID)
+function TBCEPGP:AddPlayerToItem(Roll, Index, GUID)
     local PR = TBCEPGPDataTable.Players[GUID].PR
     local players = EPGPActiveLootItems[Index].players[Roll]
     players[#players + 1] = {curName = TBCEPGPDataTable.Players[GUID].Name, curPR = PR}
@@ -2029,11 +2052,18 @@ function TBCEPGP:FillLootFrameScrollPanel()
 end
 
 function TBCEPGP:LootRollAddOnMsg(Roll, Index)
-    local prefix = "TBCEPGPLoot"
+    local prefix = "TBCEPGPRoll"
     local curGUID = UnitGUID("PLAYER")
     local message = "Roll:" .. Roll .. ":" .. Index .. ":" .. curGUID .. ":"
-    C_ChatInfo.SendAddonMessage(prefix, message , "GUILD", 1)
+    C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
 end
+
+function TBCEPGP:LootItemAddOnMsg(ItemName)
+    local prefix = "TBCEPGPItem"
+    local message = "Item:" .. ItemName .. ":"
+    C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
+end
+
 
 function TBCEPGP:LootItemFrameResize(Index)
     local curIFrameHeight = #EPGPActiveLootItems[Index].players.Need
