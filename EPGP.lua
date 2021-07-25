@@ -6,7 +6,9 @@ local AddOnName = "TBC-EPGP"
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
 local EPGPAdminFrame, AdminScrollPanel = nil, nil
+local EPGPLootFrame, LootScrollPanel = nil, nil
 local adminPlayerFrames, userPlayerFrames = {}, {}
+local EPGPActiveLootItems, LootItemFrames = {}, {}
 local sortCol, sortDir, filteredPlayers = nil, "Asc", nil
 local addonLoaded, variablesLoaded = false, false
 local FilterButtonFrame = nil
@@ -41,6 +43,7 @@ local filteredClasses =
 
 function TBCEPGP:OnLoad()
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
+    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPLoot")
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPVersion")
 
     EventFrame = CreateFrame("Frame", nil, UIParent)
@@ -49,6 +52,7 @@ function TBCEPGP:OnLoad()
     TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.Events:VariablesLoaded(...) end)
     TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.Events:ChatMsgAddon(...) end)
     TBCEPGP:RegisterEvents("GROUP_ROSTER_UPDATE", function(...) TBCEPGP.Events:GroupRosterUpdate(...) end)
+    TBCEPGP:RegisterEvents("LOOT_OPENED", function(...) TBCEPGP.Events:LootOpened(...) end)
 
     EventFrame:SetScript("OnEvent", function(...)
         TBCEPGP:OnEvent(...)
@@ -128,10 +132,206 @@ function TBCEPGP:OnLoad()
         TBCEPGP:FilterPlayers()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
-    
+
     TBCEPGP:AddTooltipScript()
+    TBCEPGP:CreateLootFrame()
 
     EPGPOptionsPanel:Hide()
+end
+
+function TBCEPGP:CreateLootFrame()
+    EPGPLootFrame = CreateFrame("Frame", nil, UIParent)
+    EPGPLootFrame:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame:SetSize(670, 400)
+    EPGPLootFrame:EnableMouse(true)
+    EPGPLootFrame:SetMovable(true)
+    EPGPLootFrame:RegisterForDrag("LeftButton")
+    EPGPLootFrame:SetScript("OnDragStart", EPGPLootFrame.StartMoving)
+    EPGPLootFrame:SetScript("OnDragStop", EPGPLootFrame.StopMovingOrSizing)
+
+    EPGPLootFrame.TopLeftBG     = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.TopBG1        = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.TopBG2        = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.TopRightBG    = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.BotLeftBG     = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.BotBG1        = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.BotBG2        = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.BotRightBG    = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+
+    EPGPLootFrame.TopLeftBG :SetSize(200, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.TopBG1    :SetSize(200, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.TopBG2    :SetSize(200, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.TopRightBG:SetSize(100, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.BotLeftBG :SetSize(200, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.BotBG1    :SetSize(200, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.BotBG2    :SetSize(200, EPGPLootFrame:GetHeight() / 2)
+    EPGPLootFrame.BotRightBG:SetSize(100, EPGPLootFrame:GetHeight() / 2)
+
+    EPGPLootFrame.TopLeftBG :SetPoint("TOPLEFT", 0, 0)
+    EPGPLootFrame.TopBG1    :SetPoint("LEFT", EPGPLootFrame.TopLeftBG, "RIGHT", 0, 0)
+    EPGPLootFrame.TopBG2    :SetPoint("LEFT", EPGPLootFrame.TopBG1, "RIGHT", 0, 0)
+    EPGPLootFrame.TopRightBG:SetPoint("LEFT", EPGPLootFrame.TopBG2, "RIGHT", 0, 0)
+
+    EPGPLootFrame.BotLeftBG :SetPoint("TOP", EPGPLootFrame.TopLeftBG, "BOTTOM", 0, 0)
+    EPGPLootFrame.BotBG1    :SetPoint("TOP", EPGPLootFrame.TopBG1, "BOTTOM", 0, 0)
+    EPGPLootFrame.BotBG2    :SetPoint("TOP", EPGPLootFrame.TopBG2, "BOTTOM", 0, 0)
+    EPGPLootFrame.BotRightBG:SetPoint("TOP", EPGPLootFrame.TopRightBG, "BOTTOM", 0, 0)
+
+    EPGPLootFrame.TopLeftBG :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOPLEFT"})
+    EPGPLootFrame.TopBG1    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
+    EPGPLootFrame.TopBG2    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
+    EPGPLootFrame.TopRightBG:SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOPRIGHT"})
+    EPGPLootFrame.BotLeftBG :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTLEFT"})
+    EPGPLootFrame.BotBG1    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
+    EPGPLootFrame.BotBG2    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
+    EPGPLootFrame.BotRightBG:SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTRIGHT"})
+
+    EPGPLootFrame.Title = CreateFrame("FRAME", nil, EPGPLootFrame)
+    EPGPLootFrame.Title:SetSize(300, 65)
+    EPGPLootFrame.Title:SetPoint("TOP", EPGPLootFrame, "TOP", 0, EPGPLootFrame.Title:GetHeight() * 0.35 - 4)
+    EPGPLootFrame.Title:SetFrameStrata("HIGH")
+
+    EPGPLootFrame.Title.Text = EPGPLootFrame.Title:CreateFontString("EPGPLootFrame", "ARTWORK", "GameFontNormalLarge")
+    EPGPLootFrame.Title.Text:SetPoint("TOP", 0, -EPGPLootFrame.Title:GetHeight() * 0.25 + 3)
+    EPGPLootFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+
+    EPGPLootFrame.Title.Texture = EPGPLootFrame.Title:CreateTexture(nil, "BACKGROUND")
+    EPGPLootFrame.Title.Texture:SetAllPoints()
+    EPGPLootFrame.Title.Texture:SetTexture("Interface/DialogFrame/UI-DialogBox-Header")
+
+    EPGPLootFrame.ExtraBG = CreateFrame("FRAME", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.ExtraBG:SetSize(EPGPLootFrame:GetWidth() - 25, EPGPLootFrame:GetHeight() - 79)
+    EPGPLootFrame.ExtraBG:SetPoint("TOP", 2, -41)
+    EPGPLootFrame.ExtraBG:SetFrameStrata("HIGH")
+    EPGPLootFrame.ExtraBG:SetBackdrop({
+        bgFile = "Interface/BankFrame/Bank-Background",
+        tile = true,
+        tileSize = 100;
+    })
+    EPGPLootFrame.ExtraBG:SetBackdropColor(0.25, 0.25, 0.25, 1)
+
+    local scrollFrame = CreateFrame("ScrollFrame", nil, EPGPLootFrame, "UIPanelScrollFrameTemplate BackdropTemplate");
+    scrollFrame:SetSize(EPGPLootFrame:GetWidth() - 45, EPGPLootFrame:GetHeight() - 77)
+    scrollFrame:SetPoint("TOP", -11, -40)
+    scrollFrame:SetFrameStrata("HIGH")
+
+    LootScrollPanel = CreateFrame("Frame")
+    LootScrollPanel:SetSize(scrollFrame:GetWidth(), 300)
+    LootScrollPanel:SetPoint("TOP")
+
+    EPGPLootFrame.Header = CreateFrame("Frame", nil, EPGPLootFrame, "BackdropTemplate")
+    EPGPLootFrame.Header:SetPoint("TOP", -11, -20)
+    EPGPLootFrame.Header:SetSize(LootScrollPanel:GetWidth(), 50)
+
+    EPGPLootFrame.Header.Icon = CreateFrame("Frame", nil, EPGPLootFrame.Header, "BackdropTemplate")
+    EPGPLootFrame.Header.Icon:SetSize(34, 24)
+    EPGPLootFrame.Header.Icon:SetPoint("TOPLEFT", 5, 0)
+    EPGPLootFrame.Header.Icon:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPLootFrame.Header.Icon:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPLootFrame.Header.Icon.Text = EPGPLootFrame.Header.Icon:CreateFontString("EPGPLootFrame.Header.Icon.Text", "ARTWORK", "GameFontNormal")
+    EPGPLootFrame.Header.Icon.Text:SetSize(EPGPLootFrame.Header.Icon:GetWidth(), EPGPLootFrame.Header.Icon:GetHeight())
+    EPGPLootFrame.Header.Icon.Text:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame.Header.Icon.Text:SetTextColor(1, 1, 1, 1)
+    EPGPLootFrame.Header.Icon.Text:SetText("Icon")
+
+    EPGPLootFrame.Header.Name = CreateFrame("Frame", nil, EPGPLootFrame.Header, "BackdropTemplate")
+    EPGPLootFrame.Header.Name:SetSize(200, 24)
+    EPGPLootFrame.Header.Name:SetPoint("BOTTOMLEFT", EPGPLootFrame.Header.Icon, "BOTTOMRIGHT", -4, 0)
+    EPGPLootFrame.Header.Name:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPLootFrame.Header.Name:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPLootFrame.Header.Name.Text = EPGPLootFrame.Header.Name:CreateFontString("EPGPLootFrame.Header.Name.Text", "ARTWORK", "GameFontNormal")
+    EPGPLootFrame.Header.Name.Text:SetSize(EPGPLootFrame.Header.Name:GetWidth(), EPGPLootFrame.Header.Name:GetHeight())
+    EPGPLootFrame.Header.Name.Text:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame.Header.Name.Text:SetTextColor(1, 1, 1, 1)
+    EPGPLootFrame.Header.Name.Text:SetText("Name")
+
+    EPGPLootFrame.Header.curGP = CreateFrame("Frame", nil, EPGPLootFrame.Header, "BackdropTemplate")
+    EPGPLootFrame.Header.curGP:SetSize(50, 24)
+    EPGPLootFrame.Header.curGP:SetPoint("BOTTOMLEFT", EPGPLootFrame.Header.Name, "BOTTOMRIGHT", -4, 0)
+    EPGPLootFrame.Header.curGP:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPLootFrame.Header.curGP:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPLootFrame.Header.curGP.Text = EPGPLootFrame.Header.curGP:CreateFontString("EPGPLootFrame.Header.curGP.Text", "ARTWORK", "GameFontNormal")
+    EPGPLootFrame.Header.curGP.Text:SetSize(EPGPLootFrame.Header.curGP:GetWidth(), EPGPLootFrame.Header.curGP:GetHeight())
+    EPGPLootFrame.Header.curGP.Text:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame.Header.curGP.Text:SetTextColor(1, 1, 1, 1)
+    EPGPLootFrame.Header.curGP.Text:SetText("GP Cost")
+
+    EPGPLootFrame.Header.playersNeed = CreateFrame("Frame", nil, EPGPLootFrame.Header, "BackdropTemplate")
+    EPGPLootFrame.Header.playersNeed:SetSize(100, 24)
+    EPGPLootFrame.Header.playersNeed:SetPoint("BOTTOMLEFT", EPGPLootFrame.Header.curGP, "BOTTOMRIGHT", -4, 0)
+    EPGPLootFrame.Header.playersNeed:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPLootFrame.Header.playersNeed:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPLootFrame.Header.playersNeed.Text = EPGPLootFrame.Header.playersNeed:CreateFontString("EPGPLootFrame.Header.playersNeed.Text", "ARTWORK", "GameFontNormal")
+    EPGPLootFrame.Header.playersNeed.Text:SetSize(EPGPLootFrame.Header.playersNeed:GetWidth(), EPGPLootFrame.Header.playersNeed:GetHeight())
+    EPGPLootFrame.Header.playersNeed.Text:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame.Header.playersNeed.Text:SetTextColor(1, 1, 1, 1)
+    EPGPLootFrame.Header.playersNeed.Text:SetText("Need")
+
+    EPGPLootFrame.Header.playersGreed = CreateFrame("Frame", nil, EPGPLootFrame.Header, "BackdropTemplate")
+    EPGPLootFrame.Header.playersGreed:SetSize(100, 24)
+    EPGPLootFrame.Header.playersGreed:SetPoint("BOTTOMLEFT", EPGPLootFrame.Header.playersNeed, "BOTTOMRIGHT", -4, 0)
+    EPGPLootFrame.Header.playersGreed:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPLootFrame.Header.playersGreed:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPLootFrame.Header.playersGreed.Text = EPGPLootFrame.Header.playersGreed:CreateFontString("EPGPLootFrame.Header.playersGreed.Text", "ARTWORK", "GameFontNormal")
+    EPGPLootFrame.Header.playersGreed.Text:SetSize(EPGPLootFrame.Header.playersGreed:GetWidth(), EPGPLootFrame.Header.playersGreed:GetHeight())
+    EPGPLootFrame.Header.playersGreed.Text:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame.Header.playersGreed.Text:SetTextColor(1, 1, 1, 1)
+    EPGPLootFrame.Header.playersGreed.Text:SetText("Greed")
+
+    EPGPLootFrame.Header.buttons = CreateFrame("Frame", nil, EPGPLootFrame.Header, "BackdropTemplate")
+    EPGPLootFrame.Header.buttons:SetSize(155, 24)
+    EPGPLootFrame.Header.buttons:SetPoint("BOTTOMLEFT", EPGPLootFrame.Header.playersGreed, "BOTTOMRIGHT", -4, 0)
+    EPGPLootFrame.Header.buttons:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPLootFrame.Header.buttons:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPLootFrame.Header.buttons.Text = EPGPLootFrame.Header.buttons:CreateFontString("EPGPLootFrame.Header.buttons.Text", "ARTWORK", "GameFontNormal")
+    EPGPLootFrame.Header.buttons.Text:SetSize(EPGPLootFrame.Header.buttons:GetWidth(), EPGPLootFrame.Header.buttons:GetHeight())
+    EPGPLootFrame.Header.buttons.Text:SetPoint("CENTER", 0, 0)
+    EPGPLootFrame.Header.buttons.Text:SetTextColor(1, 1, 1, 1)
+    EPGPLootFrame.Header.buttons.Text:SetText("Buttons")
+
+    local curFont, curSize, curFlags = EPGPLootFrame.Header.Name.Text:GetFont()
+    EPGPLootFrame.Header.Icon .Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPLootFrame.Header.Name .Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPLootFrame.Header.curGP.Text:SetFont(curFont, curSize - 2, curFlags)
+
+    local EPGPLootFrameCloseButton = CreateFrame("Button", nil, EPGPLootFrame, "UIPanelCloseButton, BackDropTemplate")
+    EPGPLootFrameCloseButton:SetSize(24, 24)
+    EPGPLootFrameCloseButton:SetPoint("TOPRIGHT", EPGPLootFrame, "TOPRIGHT", -3, -3)
+    EPGPLootFrameCloseButton:SetScript("OnClick", function() EPGPLootFrame:Hide() end)
+
+    scrollFrame:SetScrollChild(LootScrollPanel)
+
+    EPGPLootFrame:Hide()
 end
 
 function TBCEPGP:AddTooltipScript()
@@ -510,6 +710,22 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                 end
             end
         end
+    elseif prefix == "TBCEPGPLoot" then
+        local subPayload = payload
+        local subStringList = {}
+
+        for i = 1, 3 do
+            if subPayload ~= nil then
+                subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
+                local stringFind = string.find(subPayload, ":", 1)
+                if stringFind ~= nil then
+                    subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
+                end
+            end
+        end
+        subStringList[2] = tonumber(subStringList[2])
+
+        TBCEPGP:AddNameToItem(subStringList[1], subStringList[2], subStringList[3])
     end
 end
 
@@ -1670,6 +1886,164 @@ function TBCEPGP.Events:EncounterStart()
     TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
+function TBCEPGP.Events:LootOpened()
+    -- lootmethod, _, MLRaidIndex = GetLootMethod()
+    -- Check is lootmethod == master loot.
+    -- check if current player == master looter.
+        -- MLRaidIndex == RaidN for the specific master looter.
+        -- Loop over all and check if RaidN for player == MLRaidIndex
+    -- If ML opens loot, send over AddOn Channel    "Item:" .. ItemName .. ":"
+
+    for i = 1, GetNumLootItems() do
+        local _, lootName, lootQuantity, _, lootQuality, _, isQuestItem, _, isActive = GetLootSlotInfo(i)
+        if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 1 then   -- XXX Add and 'lootQuality >= 2' to only include green and above.
+            print(lootQuantity .. "x", lootName)
+            EPGPLootFrame:Show()
+
+            local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
+            itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(lootName)
+
+            print(itemName, itemLink, itemTexture)
+
+            --if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
+                EPGPActiveLootItems[#EPGPActiveLootItems + 1] =
+                {
+                    name = itemName,
+                    link = itemLink,
+                    texture = itemTexture,
+                    --GPValue = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel),
+                    GPValue = 1.234,
+                    players = {Need = {}, Greed = {},},
+                }
+            --end
+        end
+    end
+    TBCEPGP:FillLootFrameScrollPanel()
+end
+
+function TBCEPGP:AddNameToItem(Roll, Index, GUID)
+    local PR = TBCEPGPDataTable.Players[GUID].PR
+    local players = EPGPActiveLootItems[Index].players[Roll]
+    players[#players + 1] = {curName = TBCEPGPDataTable.Players[GUID].Name, curPR = PR}
+    table.sort(players, function(a, b) return a.curPR > b.curPR end)
+    EPGPActiveLootItems[Index].players[Roll] = players
+    if #players ~= 0 then
+        local PlayerString = ""
+        for j = 1, #players do
+            PlayerString = PlayerString .. players[j].curName .. " - " .. players[j].curPR .. "\n"
+        end
+        LootItemFrames[Index][Roll]:SetText(PlayerString)
+    end
+    TBCEPGP:LootItemFrameResize(Index)
+end
+
+function TBCEPGP:FillLootFrameScrollPanel()
+    for i = 1, #EPGPActiveLootItems do
+        local curItemFrame = LootItemFrames[i]
+        if curItemFrame == nil then
+            curItemFrame = CreateFrame("Frame", nil, LootScrollPanel, "BackdropTemplate")
+            curItemFrame:EnableMouse(true)
+            curItemFrame:SetBackdrop({
+                bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                edgeSize = 8,
+                insets = {left = 2, right = 2, top = 2, bottom = 2},
+            })
+            curItemFrame:SetBackdropColor(0.25, 0.25, 0.25, 1)
+            if i == 1 then
+                curItemFrame:SetPoint("TOPLEFT", LootScrollPanel, "TOPLEFT", 5, 0)
+            elseif i > 1 then
+                curItemFrame:SetPoint("TOP", LootItemFrames[i-1], "BOTTOM", 0, 0)
+            end
+
+            curItemFrame.Icon = CreateFrame("FRAME", nil, curItemFrame, "BackdropTemplate")
+            curItemFrame.Icon:SetSize(EPGPLootFrame.Header.Icon:GetWidth() - 4, 30)
+            curItemFrame.Icon:SetPoint("TOPLEFT", 2, -2)
+            curItemFrame.Icon:SetBackdrop({bgFile = EPGPActiveLootItems[i].texture,})
+            curItemFrame.Icon:SetBackdropColor(1, 1, 1, 1)
+
+            curItemFrame.Name = curItemFrame:CreateFontString("curPlayercurItemFrameFrame", "ARTWORK", "GameFontNormal")
+            curItemFrame.Name:SetSize(EPGPLootFrame.Header.Name:GetWidth(), 20)
+            curItemFrame.Name:SetPoint("TOPLEFT", curItemFrame.Icon, "TOPRIGHT", -4, -2)
+            curItemFrame.Name:SetTextColor(1, 1, 1, 1)
+            curItemFrame.Name:SetText(EPGPActiveLootItems[i].link)
+
+            curItemFrame.curGP = curItemFrame:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
+            curItemFrame.curGP:SetSize(EPGPLootFrame.Header.curGP:GetWidth(), 20)
+            curItemFrame.curGP:SetPoint("TOPLEFT", curItemFrame.Name, "TOPRIGHT", -4, 0)
+            curItemFrame.curGP:SetTextColor(1, 1, 1, 1)
+            curItemFrame.curGP:SetText(EPGPActiveLootItems[i].GPValue)
+
+            curItemFrame.Need = curItemFrame:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
+            curItemFrame.Need:SetPoint("TOPLEFT", curItemFrame.curGP, "TOPRIGHT", -4, 0)
+            curItemFrame.Need:SetTextColor(1, 1, 1, 1)
+            local NeedPlayers = ""
+            for j = 1, #EPGPActiveLootItems[i].players.Need do
+                NeedPlayers = NeedPlayers .. EPGPActiveLootItems[i].players.Need[j] .. "\n"
+            end
+            curItemFrame.Need:SetText(NeedPlayers)
+            curItemFrame.Need:SetJustifyV("TOP")
+
+            curItemFrame.Greed = curItemFrame:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
+            curItemFrame.Greed:SetPoint("TOPLEFT", curItemFrame.Need, "TOPRIGHT", -4, 0)
+            curItemFrame.Greed:SetTextColor(1, 1, 1, 1)
+            local GreedPlayers = ""
+            for j = 1, #EPGPActiveLootItems[i].players.Greed do
+                GreedPlayers = GreedPlayers .. EPGPActiveLootItems[i].players.Greed[j] .. "\n"
+            end
+            curItemFrame.Greed:SetText(GreedPlayers)
+            curItemFrame.Greed:SetJustifyV("TOP")
+
+            curItemFrame.needButton = CreateFrame("BUTTON", nil, curItemFrame, "UIPanelButtonTemplate")
+            curItemFrame.needButton:SetSize(EPGPLootFrame.Header.buttons:GetWidth() / 2 - 10, 20)
+            curItemFrame.needButton:SetPoint("TOPLEFT", curItemFrame.Greed, "TOPRIGHT", 5, 0)
+            curItemFrame.needButton:SetScript("OnClick", function() TBCEPGP:LootRollAddOnMsg("Need", i) end)
+            curItemFrame.needButton.text = curItemFrame.needButton:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
+            curItemFrame.needButton.text:SetText("Need Item")
+            curItemFrame.needButton.text:SetPoint("CENTER", 0, 0)
+
+            curItemFrame.greedButton = CreateFrame("BUTTON", nil, curItemFrame, "UIPanelButtonTemplate")
+            curItemFrame.greedButton:SetSize(EPGPLootFrame.Header.buttons:GetWidth() / 2 - 10, 20)
+            curItemFrame.greedButton:SetPoint("TOPLEFT", curItemFrame.needButton, "TOPRIGHT", 5, 0)
+            curItemFrame.greedButton:SetScript("OnClick", function() TBCEPGP:LootRollAddOnMsg("Greed", i) end)
+            curItemFrame.greedButton.text = curItemFrame.greedButton:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
+            curItemFrame.greedButton.text:SetText("Greed Item")
+            curItemFrame.greedButton.text:SetPoint("CENTER", 0, 0)
+
+            local curBFont, curBSize, curBFlags = curItemFrame.needButton.text:GetFont()
+            curItemFrame.needButton .text:SetFont(curBFont, curBSize - 2, curBFlags)
+            curItemFrame.greedButton.text:SetFont(curBFont, curBSize - 2, curBFlags)
+
+            curItemFrame:Show()
+
+            local curLFont, curLSize, curLFlags = EPGPLootFrame.Header.Name.Text:GetFont()
+            curItemFrame.Name :SetFont(curLFont, curLSize, curLFlags)
+            curItemFrame.curGP:SetFont(curLFont, curLSize, curLFlags)
+            curItemFrame.Need :SetFont(curLFont, curLSize, curLFlags)
+            curItemFrame.Greed:SetFont(curLFont, curLSize, curLFlags)
+
+            LootItemFrames[i] = curItemFrame
+            TBCEPGP:LootItemFrameResize(i)
+        end
+    end
+end
+
+function TBCEPGP:LootRollAddOnMsg(Roll, Index)
+    local prefix = "TBCEPGPLoot"
+    local curGUID = UnitGUID("PLAYER")
+    local message = "Roll:" .. Roll .. ":" .. Index .. ":" .. curGUID .. ":"
+    C_ChatInfo.SendAddonMessage(prefix, message , "GUILD", 1)
+end
+
+function TBCEPGP:LootItemFrameResize(Index)
+    local curIFrameHeight = #EPGPActiveLootItems[Index].players.Need
+    if #EPGPActiveLootItems[Index].players.Greed >= curIFrameHeight then curIFrameHeight = #EPGPActiveLootItems[Index].players.Greed end
+    if curIFrameHeight >= 3 then curIFrameHeight = curIFrameHeight * 10 + 5 else curIFrameHeight = 32 end
+    LootItemFrames[Index]:SetSize(LootScrollPanel:GetWidth() - 4, curIFrameHeight)
+    LootItemFrames[Index].Need:SetSize(EPGPLootFrame.Header.playersNeed:GetWidth(), LootItemFrames[Index]:GetHeight())
+    LootItemFrames[Index].Greed:SetSize(EPGPLootFrame.Header.playersGreed:GetWidth(), LootItemFrames[Index]:GetHeight())
+end
+
 TBCEPGP:OnLoad()
 
 TBCEPGP.SlashCommands["roll"] = function(value)
@@ -1696,11 +2070,21 @@ TBCEPGP.SlashCommands["show"] = function(value)
     end
 end
 
+TBCEPGP.SlashCommands["loot"] = function(value)
+    EPGPLootFrame:Show()
+end
+
 TBCEPGP.SlashCommands["Roll"] = TBCEPGP.SlashCommands["roll"]
 TBCEPGP.SlashCommands["ROLL"] = TBCEPGP.SlashCommands["roll"]
+
 TBCEPGP.SlashCommands["Sync"] = TBCEPGP.SlashCommands["sync"]
 TBCEPGP.SlashCommands["SYNC"] = TBCEPGP.SlashCommands["sync"]
+
 TBCEPGP.SlashCommands["Add"] = TBCEPGP.SlashCommands["add"]
 TBCEPGP.SlashCommands["ADD"] = TBCEPGP.SlashCommands["add"]
+
 TBCEPGP.SlashCommands["Show"] = TBCEPGP.SlashCommands["show"]
 TBCEPGP.SlashCommands["SHOW"] = TBCEPGP.SlashCommands["show"]
+
+TBCEPGP.SlashCommands["Loot"] = TBCEPGP.SlashCommands["loot"]
+TBCEPGP.SlashCommands["LOOT"] = TBCEPGP.SlashCommands["loot"]
