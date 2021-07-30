@@ -7,13 +7,17 @@ local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
 local EPGPAdminFrame, AdminScrollPanel = nil, nil
 local EPGPLootFrame, LootScrollPanel = nil, nil
+local EPGPChangeLogFrame, ChangeLogScrollPanel = nil, nil
 local adminPlayerFrames, userPlayerFrames = {}, {}
 local EPGPActiveLootItems, LootItemFrames = {}, {}
+local ChangeLogsFrames = {}
 local sortCol, sortDir, filteredPlayers = nil, "Asc", nil
 local addonLoaded, variablesLoaded = false, false
 local FilterButtonFrame = nil
 local FilterRaid = false
+
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
+if EPGPChangeLog == nil then EPGPChangeLog = {} end
 
 local classNumbers =
 {
@@ -136,8 +140,205 @@ function TBCEPGP:OnLoad()
 
     TBCEPGP:AddTooltipScript()
     TBCEPGP:CreateLootFrame()
+    TBCEPGP:CreateLogFrame()
 
     EPGPOptionsPanel:Hide()
+end
+
+function TBCEPGP:CreateLogFrame()
+    EPGPChangeLogFrame = CreateFrame("Frame", nil, UIParent)
+    EPGPChangeLogFrame:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame:SetSize(670, 400)
+    EPGPChangeLogFrame:EnableMouse(true)
+    EPGPChangeLogFrame:SetMovable(true)
+    EPGPChangeLogFrame:RegisterForDrag("LeftButton")
+    EPGPChangeLogFrame:SetScript("OnDragStart", EPGPChangeLogFrame.StartMoving)
+    EPGPChangeLogFrame:SetScript("OnDragStop", EPGPChangeLogFrame.StopMovingOrSizing)
+
+    EPGPChangeLogFrame.TopLeftBG     = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.TopBG1        = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.TopBG2        = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.TopRightBG    = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.BotLeftBG     = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.BotBG1        = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.BotBG2        = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.BotRightBG    = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+
+    EPGPChangeLogFrame.TopLeftBG :SetSize(200, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.TopBG1    :SetSize(200, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.TopBG2    :SetSize(200, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.TopRightBG:SetSize(100, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.BotLeftBG :SetSize(200, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.BotBG1    :SetSize(200, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.BotBG2    :SetSize(200, EPGPChangeLogFrame:GetHeight() / 2)
+    EPGPChangeLogFrame.BotRightBG:SetSize(100, EPGPChangeLogFrame:GetHeight() / 2)
+
+    EPGPChangeLogFrame.TopLeftBG :SetPoint("TOPLEFT", 0, 0)
+    EPGPChangeLogFrame.TopBG1    :SetPoint("LEFT", EPGPChangeLogFrame.TopLeftBG, "RIGHT", 0, 0)
+    EPGPChangeLogFrame.TopBG2    :SetPoint("LEFT", EPGPChangeLogFrame.TopBG1, "RIGHT", 0, 0)
+    EPGPChangeLogFrame.TopRightBG:SetPoint("LEFT", EPGPChangeLogFrame.TopBG2, "RIGHT", 0, 0)
+
+    EPGPChangeLogFrame.BotLeftBG :SetPoint("TOP", EPGPChangeLogFrame.TopLeftBG, "BOTTOM", 0, 0)
+    EPGPChangeLogFrame.BotBG1    :SetPoint("TOP", EPGPChangeLogFrame.TopBG1, "BOTTOM", 0, 0)
+    EPGPChangeLogFrame.BotBG2    :SetPoint("TOP", EPGPChangeLogFrame.TopBG2, "BOTTOM", 0, 0)
+    EPGPChangeLogFrame.BotRightBG:SetPoint("TOP", EPGPChangeLogFrame.TopRightBG, "BOTTOM", 0, 0)
+
+    EPGPChangeLogFrame.TopLeftBG :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOPLEFT"})
+    EPGPChangeLogFrame.TopBG1    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
+    EPGPChangeLogFrame.TopBG2    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOP"})
+    EPGPChangeLogFrame.TopRightBG:SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-TOPRIGHT"})
+    EPGPChangeLogFrame.BotLeftBG :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTLEFT"})
+    EPGPChangeLogFrame.BotBG1    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
+    EPGPChangeLogFrame.BotBG2    :SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTTOM"})
+    EPGPChangeLogFrame.BotRightBG:SetBackdrop({bgFile = "Interface/HELPFRAME/HelpFrame-BOTRIGHT"})
+
+    EPGPChangeLogFrame.Title = CreateFrame("FRAME", nil, EPGPChangeLogFrame)
+    EPGPChangeLogFrame.Title:SetSize(300, 65)
+    EPGPChangeLogFrame.Title:SetPoint("TOP", EPGPChangeLogFrame, "TOP", 0, EPGPChangeLogFrame.Title:GetHeight() * 0.35 - 4)
+    EPGPChangeLogFrame.Title:SetFrameStrata("HIGH")
+
+    EPGPChangeLogFrame.Title.Text = EPGPChangeLogFrame.Title:CreateFontString("EPGPChangeLogFrame", "ARTWORK", "GameFontNormalLarge")
+    EPGPChangeLogFrame.Title.Text:SetPoint("TOP", 0, -EPGPChangeLogFrame.Title:GetHeight() * 0.25 + 3)
+    EPGPChangeLogFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+
+    EPGPChangeLogFrame.Title.Texture = EPGPChangeLogFrame.Title:CreateTexture(nil, "BACKGROUND")
+    EPGPChangeLogFrame.Title.Texture:SetAllPoints()
+    EPGPChangeLogFrame.Title.Texture:SetTexture("Interface/DialogFrame/UI-DialogBox-Header")
+
+    EPGPChangeLogFrame.ExtraBG = CreateFrame("FRAME", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.ExtraBG:SetSize(EPGPChangeLogFrame:GetWidth() - 25, EPGPChangeLogFrame:GetHeight() - 79)
+    EPGPChangeLogFrame.ExtraBG:SetPoint("TOP", 2, -41)
+    EPGPChangeLogFrame.ExtraBG:SetFrameStrata("HIGH")
+    EPGPChangeLogFrame.ExtraBG:SetBackdrop({
+        bgFile = "Interface/BankFrame/Bank-Background",
+        tile = true,
+        tileSize = 100;
+    })
+    EPGPChangeLogFrame.ExtraBG:SetBackdropColor(0.25, 0.25, 0.25, 1)
+
+    local scrollFrame = CreateFrame("ScrollFrame", nil, EPGPChangeLogFrame, "UIPanelScrollFrameTemplate BackdropTemplate");
+    scrollFrame:SetSize(EPGPChangeLogFrame:GetWidth() - 45, EPGPChangeLogFrame:GetHeight() - 77)
+    scrollFrame:SetPoint("TOP", -11, -40)
+    scrollFrame:SetFrameStrata("HIGH")
+
+    ChangeLogScrollPanel = CreateFrame("Frame")
+    ChangeLogScrollPanel:SetSize(scrollFrame:GetWidth(), 300)
+    ChangeLogScrollPanel:SetPoint("TOP")
+
+    EPGPChangeLogFrame.Header = CreateFrame("Frame", nil, EPGPChangeLogFrame, "BackdropTemplate")
+    EPGPChangeLogFrame.Header:SetPoint("TOP", -11, -20)
+    EPGPChangeLogFrame.Header:SetSize(ChangeLogScrollPanel:GetWidth(), 50)
+
+    EPGPChangeLogFrame.Header.Name = CreateFrame("Frame", nil, EPGPChangeLogFrame.Header, "BackdropTemplate")
+    EPGPChangeLogFrame.Header.Name:SetSize(100, 24)
+    EPGPChangeLogFrame.Header.Name:SetPoint("TOPLEFT", 2, 0)
+    EPGPChangeLogFrame.Header.Name:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPChangeLogFrame.Header.Name:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPChangeLogFrame.Header.Name.Text = EPGPChangeLogFrame.Header.Name:CreateFontString("EPGPChangeLogFrame.Header.Name.Text", "ARTWORK", "GameFontNormal")
+    EPGPChangeLogFrame.Header.Name.Text:SetSize(EPGPChangeLogFrame.Header.Name:GetWidth(), EPGPChangeLogFrame.Header.Name:GetHeight())
+    EPGPChangeLogFrame.Header.Name.Text:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame.Header.Name.Text:SetTextColor(1, 1, 1, 1)
+    EPGPChangeLogFrame.Header.Name.Text:SetText("Name")
+
+    EPGPChangeLogFrame.Header.Points = CreateFrame("Frame", nil, EPGPChangeLogFrame.Header, "BackdropTemplate")
+    EPGPChangeLogFrame.Header.Points:SetSize(50, 24)
+    EPGPChangeLogFrame.Header.Points:SetPoint("BOTTOMLEFT", EPGPChangeLogFrame.Header.Name, "BOTTOMRIGHT", -4, 0)
+    EPGPChangeLogFrame.Header.Points:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPChangeLogFrame.Header.Points:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPChangeLogFrame.Header.Points.Text = EPGPChangeLogFrame.Header.Points:CreateFontString("EPGPChangeLogFrame.Header.Points.Text", "ARTWORK", "GameFontNormal")
+    EPGPChangeLogFrame.Header.Points.Text:SetSize(EPGPChangeLogFrame.Header.Points:GetWidth(), EPGPChangeLogFrame.Header.Points:GetHeight())
+    EPGPChangeLogFrame.Header.Points.Text:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame.Header.Points.Text:SetTextColor(1, 1, 1, 1)
+    EPGPChangeLogFrame.Header.Points.Text:SetText("Points")
+
+    EPGPChangeLogFrame.Header.Amount = CreateFrame("Frame", nil, EPGPChangeLogFrame.Header, "BackdropTemplate")
+    EPGPChangeLogFrame.Header.Amount:SetSize(75, 24)
+    EPGPChangeLogFrame.Header.Amount:SetPoint("BOTTOMLEFT", EPGPChangeLogFrame.Header.Points, "BOTTOMRIGHT", -4, 0)
+    EPGPChangeLogFrame.Header.Amount:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPChangeLogFrame.Header.Amount:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPChangeLogFrame.Header.Amount.Text = EPGPChangeLogFrame.Header.Amount:CreateFontString("EPGPChangeLogFrame.Header.Amount.Text", "ARTWORK", "GameFontNormal")
+    EPGPChangeLogFrame.Header.Amount.Text:SetSize(EPGPChangeLogFrame.Header.Amount:GetWidth(), EPGPChangeLogFrame.Header.Amount:GetHeight())
+    EPGPChangeLogFrame.Header.Amount.Text:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame.Header.Amount.Text:SetTextColor(1, 1, 1, 1)
+    EPGPChangeLogFrame.Header.Amount.Text:SetText("Amount")
+
+    EPGPChangeLogFrame.Header.DateTime = CreateFrame("Frame", nil, EPGPChangeLogFrame.Header, "BackdropTemplate")
+    EPGPChangeLogFrame.Header.DateTime:SetSize(150, 24)
+    EPGPChangeLogFrame.Header.DateTime:SetPoint("BOTTOMLEFT", EPGPChangeLogFrame.Header.Amount, "BOTTOMRIGHT", -4, 0)
+    EPGPChangeLogFrame.Header.DateTime:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPChangeLogFrame.Header.DateTime:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPChangeLogFrame.Header.DateTime.Text = EPGPChangeLogFrame.Header.DateTime:CreateFontString("EPGPChangeLogFrame.Header.DateTime.Text", "ARTWORK", "GameFontNormal")
+    EPGPChangeLogFrame.Header.DateTime.Text:SetSize(EPGPChangeLogFrame.Header.DateTime:GetWidth(), EPGPChangeLogFrame.Header.DateTime:GetHeight())
+    EPGPChangeLogFrame.Header.DateTime.Text:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame.Header.DateTime.Text:SetTextColor(1, 1, 1, 1)
+    EPGPChangeLogFrame.Header.DateTime.Text:SetText("DateTime")
+
+    EPGPChangeLogFrame.Header.Admin = CreateFrame("Frame", nil, EPGPChangeLogFrame.Header, "BackdropTemplate")
+    EPGPChangeLogFrame.Header.Admin:SetSize(100, 24)
+    EPGPChangeLogFrame.Header.Admin:SetPoint("BOTTOMLEFT", EPGPChangeLogFrame.Header.DateTime, "BOTTOMRIGHT", -4, 0)
+    EPGPChangeLogFrame.Header.Admin:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPChangeLogFrame.Header.Admin:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPChangeLogFrame.Header.Admin.Text = EPGPChangeLogFrame.Header.Admin:CreateFontString("EPGPChangeLogFrame.Header.Admin.Text", "ARTWORK", "GameFontNormal")
+    EPGPChangeLogFrame.Header.Admin.Text:SetSize(EPGPChangeLogFrame.Header.Admin:GetWidth(), EPGPChangeLogFrame.Header.Admin:GetHeight())
+    EPGPChangeLogFrame.Header.Admin.Text:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame.Header.Admin.Text:SetTextColor(1, 1, 1, 1)
+    EPGPChangeLogFrame.Header.Admin.Text:SetText("Admin")
+
+    EPGPChangeLogFrame.Header.Reason = CreateFrame("Frame", nil, EPGPChangeLogFrame.Header, "BackdropTemplate")
+    EPGPChangeLogFrame.Header.Reason:SetSize(175, 24)
+    EPGPChangeLogFrame.Header.Reason:SetPoint("BOTTOMLEFT", EPGPChangeLogFrame.Header.Admin, "BOTTOMRIGHT", -4, 0)
+    EPGPChangeLogFrame.Header.Reason:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPChangeLogFrame.Header.Reason:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPChangeLogFrame.Header.Reason.Text = EPGPChangeLogFrame.Header.Reason:CreateFontString("EPGPChangeLogFrame.Header.Reason.Text", "ARTWORK", "GameFontNormal")
+    EPGPChangeLogFrame.Header.Reason.Text:SetSize(EPGPChangeLogFrame.Header.Reason:GetWidth(), EPGPChangeLogFrame.Header.Reason:GetHeight())
+    EPGPChangeLogFrame.Header.Reason.Text:SetPoint("CENTER", 0, 0)
+    EPGPChangeLogFrame.Header.Reason.Text:SetTextColor(1, 1, 1, 1)
+    EPGPChangeLogFrame.Header.Reason.Text:SetText("Reason")
+
+    local curFont, curSize, curFlags = EPGPChangeLogFrame.Header.Name.Text:GetFont()
+    EPGPChangeLogFrame.Header.Name  .Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPChangeLogFrame.Header.Points.Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPChangeLogFrame.Header.Admin .Text:SetFont(curFont, curSize - 2, curFlags)
+    EPGPChangeLogFrame.Header.Reason.Text:SetFont(curFont, curSize - 2, curFlags)
+
+    local EPGPChangeLogFrameCloseButton = CreateFrame("Button", nil, EPGPChangeLogFrame, "UIPanelCloseButton, BackDropTemplate")
+    EPGPChangeLogFrameCloseButton:SetSize(24, 24)
+    EPGPChangeLogFrameCloseButton:SetPoint("TOPRIGHT", EPGPChangeLogFrame, "TOPRIGHT", -3, -3)
+    EPGPChangeLogFrameCloseButton:SetScript("OnClick", function() EPGPChangeLogFrame:Hide() end)
+
+    scrollFrame:SetScrollChild(LootScrollPanel)
+
+    EPGPChangeLogFrame:Hide()
 end
 
 function TBCEPGP:CreateLootFrame()
@@ -1255,6 +1456,20 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.SyncButton.text:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame.SyncButton.text:SetText("Sync")
 
+    EPGPAdminFrame.LogsButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
+    EPGPAdminFrame.LogsButton:SetSize(75, 20)
+    EPGPAdminFrame.LogsButton:SetPoint("Right", EPGPAdminFrame.SyncButton, "Left", -10, 0)
+    EPGPAdminFrame.LogsButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.LogsButton:SetScript("OnClick",
+    function()
+        EPGPAdminFrame:Hide()
+        TBCEPGP:UpdateLogs()
+        EPGPChangeLogFrame:Show()
+    end)
+    EPGPAdminFrame.LogsButton.text = EPGPAdminFrame.LogsButton:CreateFontString("SyncButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPAdminFrame.LogsButton.text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.LogsButton.text:SetText("Logs")
+
     local players = TBCEPGP.DataTable.Players
     TBCEPGP:FillAdminFrameScrollPanel(players)
     scrollFrame:SetScrollChild(AdminScrollPanel)
@@ -1567,6 +1782,68 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame:Hide()
 end
 
+function TBCEPGP:UpdateLogs()
+    local Index = 1
+    for key, value in pairs(EPGPChangeLog) do
+        local curLogFrame = ChangeLogsFrames[Index]
+        if curLogFrame == nil then
+            curLogFrame = CreateFrame("Frame", nil, LootScrollPanel, "BackdropTemplate")
+            ChangeLogsFrames[Index] = curLogFrame
+            curLogFrame:SetSize(LootScrollPanel:GetWidth() - 4, 25)
+            curLogFrame:EnableMouse(true)
+            curLogFrame:SetBackdrop({
+                bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+                edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+                edgeSize = 8,
+                insets = {left = 2, right = 2, top = 2, bottom = 2},
+            })
+            curLogFrame:SetBackdropColor(0.25, 0.25, 0.25, 1)
+            curLogFrame:SetPoint("TOPLEFT", LootScrollPanel, "TOPLEFT", 5, -24 * Index + 25)
+
+            curLogFrame.Name = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
+            curLogFrame.Name:SetSize(EPGPChangeLogFrame.Header.Name:GetWidth(), 25)
+            curLogFrame.Name:SetPoint("LEFT", 0, 0)
+            curLogFrame.Name:SetTextColor(1, 1, 1, 1)
+            curLogFrame.Name:SetText(value.Name)
+
+            curLogFrame.Points = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
+            curLogFrame.Points:SetSize(EPGPChangeLogFrame.Header.Points:GetWidth(), 25)
+            curLogFrame.Points:SetPoint("LEFT", curLogFrame.Name, "RIGHT", -4, 0)
+            curLogFrame.Points:SetTextColor(1, 1, 1, 1)
+            curLogFrame.Points:SetText(value.Change)
+
+            curLogFrame.Amount = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
+            curLogFrame.Amount:SetSize(EPGPChangeLogFrame.Header.Amount:GetWidth(), 25)
+            curLogFrame.Amount:SetPoint("LEFT", curLogFrame.Points, "RIGHT", -4, 0)
+            curLogFrame.Amount:SetTextColor(1, 1, 1, 1)
+            curLogFrame.Amount:SetText(string.format("%+.3f", value.Amount))
+
+            curLogFrame.DateTime = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
+            curLogFrame.DateTime:SetSize(EPGPChangeLogFrame.Header.DateTime:GetWidth(), 25)
+            curLogFrame.DateTime:SetPoint("LEFT", curLogFrame.Amount, "RIGHT", -4, 0)
+            curLogFrame.DateTime:SetTextColor(1, 1, 1, 1)
+            curLogFrame.DateTime:SetText(value.Date)
+
+            curLogFrame.Admin = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
+            curLogFrame.Admin:SetSize(EPGPChangeLogFrame.Header.Admin:GetWidth(), 25)
+            curLogFrame.Admin:SetPoint("LEFT", curLogFrame.DateTime, "RIGHT", -4, 0)
+            curLogFrame.Admin:SetTextColor(1, 1, 1, 1)
+            curLogFrame.Admin:SetText(value.Admin)
+
+            curLogFrame.Reason = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
+            curLogFrame.Reason:SetSize(EPGPChangeLogFrame.Header.Reason:GetWidth(), 25)
+            curLogFrame.Reason:SetPoint("LEFT", curLogFrame.Admin, "RIGHT", -4, 0)
+            curLogFrame.Reason:SetTextColor(1, 1, 1, 1)
+            --curLogFrame.Reason:SetText(value.Reason)
+            curLogFrame.Reason:SetText("Not Yet Implemented!")
+
+            curLogFrame:Show()
+        end
+
+        Index = Index + 1
+    end
+end
+
 function TBCEPGP:DecayDataTable()
     local players = TBCEPGP.DataTable.Players
     for key, value in pairs(players) do
@@ -1587,6 +1864,10 @@ function TBCEPGP:MassChange(Points)
         for key, value in pairs(filteredPlayers) do
             value[Points] = value[Points] + PointsChange
             value.Update = time()
+            if PointsChange ~= 0 then
+                PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
+                EPGPChangeLog[string.format("%s-%d", key, value.Update)] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = PointsChange, Admin = UnitName("Player")}
+            end
         end
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
@@ -1705,7 +1986,9 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
             curPlayerFrame.changeEP:HookScript("OnEditFocusLost",
             function()
-                players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + tonumber(curPlayerFrame.changeEP:GetText())
+                local PointsChange = tonumber(curPlayerFrame.changeEP:GetText())
+
+                players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + PointsChange
                 players[curPlayerFrame.key].Update = time()
                 curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
@@ -1713,11 +1996,18 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 local curPR = nil
                 curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
+                local epoch = time()
+                if PointsChange ~= 0 then
+                    PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
+                    EPGPChangeLog[epoch] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = "EP", Amount = PointsChange, Admin = UnitName("Player")}
+                end
             end)
 
             curPlayerFrame.changeGP:HookScript("OnEditFocusLost",
             function()
-                players[curPlayerFrame.key].GP = players[curPlayerFrame.key].GP + tonumber(curPlayerFrame.changeGP:GetText())
+                local PointsChange = tonumber(curPlayerFrame.changeGP:GetText())
+
+                players[curPlayerFrame.key].GP = players[curPlayerFrame.key].GP + PointsChange
                 players[curPlayerFrame.key].Update = time()
                 curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
@@ -1725,6 +2015,11 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
                 local curPR = nil
                 curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
+                local epoch = time()
+                if PointsChange ~= 0 then
+                    PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
+                    EPGPChangeLog[epoch] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = "GP", Amount = PointsChange, Admin = UnitName("Player")}
+                end
             end)
         end
 
@@ -1765,7 +2060,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
     if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            return TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
+            return TBCEPGP:ComparePlayers(players, a, b)
         end)
     end
 
@@ -1851,7 +2146,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
     if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            return TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
+            return TBCEPGP:ComparePlayers(players, a, b)
         end)
     end
 
@@ -1860,15 +2155,15 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     end
 end
 
-function TBCEPGP:ComparePlayers(filteredPlayerFrames, players, a, b)
-        local aSort = players[a.key][sortCol]
-        local bSort = players[b.key][sortCol]
+function TBCEPGP:ComparePlayers(sortTable, a, b)
+    local aSort = sortTable[a.key][sortCol]
+    local bSort = sortTable[b.key][sortCol]
 
-        if sortDir == "Asc" then
-            return (aSort < bSort)
-        elseif sortDir == "Dsc" then
-            return (aSort > bSort)
-        end
+    if sortDir == "Asc" then
+        return (aSort < bSort)
+    elseif sortDir == "Dsc" then
+        return (aSort > bSort)
+    end
 end
 
 function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
