@@ -52,7 +52,6 @@ function TBCEPGP:OnLoad()
     C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPVersion")
 
     EventFrame = CreateFrame("Frame", nil, UIParent)
-    TBCEPGP:RegisterEvents("ENCOUNTER_START", function(...) TBCEPGP.Events:EncounterStart(...) end)
     TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.Events:AddonLoaded(...) end)
     TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.Events:VariablesLoaded(...) end)
     TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.Events:ChatMsgAddon(...) end)
@@ -2172,21 +2171,6 @@ function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
     TBCEPGP.DataTable.Players[curGUID].PR = curPR
     TBCEPGP.DataTable.Players[curGUID].Update = time()
     return curPR
-end
-
-function TBCEPGP.Events:EncounterStart()
-    local epoch = time()
-    local players = TBCEPGP.DataTable.Players
-    for i = 1, 40 do
-        local curGUID = UnitGUID("Raid" .. i)
-        local curName = UnitName("Raid" .. i)
-        local _, _, curClass = UnitClass("Raid" .. i)
-        if players[curGUID] == nil then
-            TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
-        end
-    end
-    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
-    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
 function TBCEPGP.Events:LootOpened()
