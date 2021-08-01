@@ -36,6 +36,10 @@ TBCEPGP.InfoTable =
         ["INVTYPE_RANGEDRIGHT"]    = 0.42,
         ["INVTYPE_RELIC"]          = 0.42,
     },
+    ["PreCalculatedItems"] =
+    {
+        [29762] = {itemLevel = 70, itemQuality = 4, itemEquipLoc = "INVTYPE_SHOULDER"}
+    }
 }
 TBCEPGP.DataTable = -- DO NOT DELETE, DYNAMIC USE!
 {

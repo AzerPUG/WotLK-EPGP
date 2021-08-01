@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 23
+TBCEPGP.Version = 24
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -335,7 +335,7 @@ function TBCEPGP:CreateLogFrame()
     EPGPChangeLogFrameCloseButton:SetPoint("TOPRIGHT", EPGPChangeLogFrame, "TOPRIGHT", -3, -3)
     EPGPChangeLogFrameCloseButton:SetScript("OnClick", function() EPGPChangeLogFrame:Hide() end)
 
-    scrollFrame:SetScrollChild(LootScrollPanel)
+    scrollFrame:SetScrollChild(ChangeLogScrollPanel)
 
     EPGPChangeLogFrame:Hide()
 end
@@ -538,14 +538,36 @@ end
 function TBCEPGP:AddTooltipScript()
     GameTooltip:HookScript("OnTooltipSetItem", function(...)
         local _, itemLink = GameTooltip:GetItem()
-        local itemName, _, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(itemLink)
+        if itemLink ~= nil then
+            --local itemName, _, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(itemLink)
+            local itemStuff = TBCEPGP:CheckItemInfo(itemLink)
 
-        if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
-            local price = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
-            price = TBCEPGP:MathRound(price * 1000) / 1000
-            GameTooltip:AddLine("TBC-EPGP: " .. price .. "GP")
+            --if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
+            if itemStuff.itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemStuff.itemEquipLoc] ~= nil then
+                --local price = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+                local price = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
+                price = TBCEPGP:MathRound(price * 1000) / 1000
+                GameTooltip:AddLine("TBC-EPGP: " .. price .. "GP")
+            end
         end
     end)
+end
+
+function TBCEPGP:CheckItemInfo(itemInfoStuff)
+    local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemInfoStuff)
+
+    local itemID = tonumber(string.match(itemLink, "[^:]*:([^:]*)"))
+
+    local value = TBCEPGP.InfoTable.PreCalculatedItems[itemID]
+    if value ~= nil then
+        itemLevel = value.itemLevel
+        itemQuality = value.itemQuality
+        itemEquipLoc = value.itemEquipLoc
+    end
+
+    local itemStuff = {itemName = itemName, itemLink = itemLink, itemID = itemID, itemLevel = itemLevel, itemQuality = itemQuality, itemEquipLoc = itemEquipLoc, itemTexture = itemTexture}
+
+    return itemStuff
 end
 
 function TBCEPGP:splitCharacterNames(input)
@@ -650,14 +672,21 @@ end
 function TBCEPGP:RollItem(inputLink)
     if inputLink == nil then print("No ItemLink provided!")
     else
-        local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(inputLink)
-        if itemEquipLoc == nil or itemEquipLoc == "" then itemEquipLoc = "Not Equipable!" end
-        local totalPrice = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+        --local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(inputLink)
+        local itemStuff = TBCEPGP:CheckItemInfo(inputLink)
+        --if itemEquipLoc == nil or itemEquipLoc == "" then itemEquipLoc = "Not Equipable!" end
+        if itemStuff.itemEquipLoc == nil or itemStuff.itemEquipLoc == "" then itemStuff.itemEquipLoc = "Not Equipable!" end
+        --local totalPrice = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+        local totalPrice = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
         local roundedPrice = TBCEPGP:MathRound(totalPrice)
-        print("EPGP Rolling Item:", itemLink)
-        print("iLevel:", itemLevel, " - Quality:", itemQuality, " - Slot:", itemEquipLoc)
-        print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemQuality, itemLevel))
-        print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemEquipLoc))
+        --print("EPGP Rolling Item:", itemLink)
+        print("EPGP Rolling Item:", itemStuff.itemLink)
+        --print("iLevel:", itemLevel, " - Quality:", itemQuality, " - Slot:", itemEquipLoc)
+        print("iLevel:", itemStuff.itemLevel, " - Quality:", itemStuff.itemQuality, " - Slot:", itemStuff.itemEquipLoc)
+        --print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemQuality, itemLevel))
+        print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemStuff.itemQuality, itemStuff.itemLevel))
+        --print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemEquipLoc))
+        print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemStuff.itemEquipLoc))
         print("Total Price:", totalPrice)
         print("Rounded Price:", roundedPrice)
     end
@@ -702,8 +731,8 @@ function TBCEPGP:SyncRaidersAddOnMsg()
     local players = TBCEPGPDataTable.Players
     for playerGUID, playerData in pairs(players) do
         local message = "Player:"
-        if playerData.EP == nil then playerData.EP = 0 end
-        if playerData.GP == nil then playerData.GP = 0 end
+        if playerData.EP == nil then playerData.EP = 1 end
+        if playerData.GP == nil then playerData.GP = 1 end
         message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
         if IsInRaid() then
             C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"RAID", 1)
@@ -1010,8 +1039,8 @@ function TBCEPGP:ReceiveVersion(version)
             UpdateFrame:Show()
             UpdateFrame.text:SetText(
                 "Please download the new version through the CurseForge app.\n" ..
-                "Or use the CurseForge website to download it manually!\n\n" .. 
-                "Newer Version: v" .. version .. "\n" .. 
+                "Or use the CurseForge website to download it manually!\n\n" ..
+                "Newer Version: v" .. version .. "\n" ..
                 "Your version: v" .. TBCEPGP.Version
             )
         end
@@ -1786,9 +1815,9 @@ function TBCEPGP:UpdateLogs()
     for key, value in pairs(EPGPChangeLog) do
         local curLogFrame = ChangeLogsFrames[Index]
         if curLogFrame == nil then
-            curLogFrame = CreateFrame("Frame", nil, LootScrollPanel, "BackdropTemplate")
+            curLogFrame = CreateFrame("Frame", nil, ChangeLogScrollPanel, "BackdropTemplate")
             ChangeLogsFrames[Index] = curLogFrame
-            curLogFrame:SetSize(LootScrollPanel:GetWidth() - 4, 25)
+            curLogFrame:SetSize(ChangeLogScrollPanel:GetWidth() - 4, 25)
             curLogFrame:EnableMouse(true)
             curLogFrame:SetBackdrop({
                 bgFile = "Interface/Tooltips/UI-Tooltip-Background",
@@ -1797,7 +1826,7 @@ function TBCEPGP:UpdateLogs()
                 insets = {left = 2, right = 2, top = 2, bottom = 2},
             })
             curLogFrame:SetBackdropColor(0.25, 0.25, 0.25, 1)
-            curLogFrame:SetPoint("TOPLEFT", LootScrollPanel, "TOPLEFT", 5, -24 * Index + 25)
+            curLogFrame:SetPoint("TOPLEFT", ChangeLogScrollPanel, "TOPLEFT", 5, -24 * Index + 25)
 
             curLogFrame.Name = curLogFrame:CreateFontString("curLogFrame", "ARTWORK", "GameFontNormal")
             curLogFrame.Name:SetSize(EPGPChangeLogFrame.Header.Name:GetWidth(), 25)
@@ -2179,8 +2208,9 @@ function TBCEPGP.Events:LootOpened()
     if lootmethod == "master" and MLRaidIndex == UnitInRaid("player") then
         for i = 1, GetNumLootItems() do
             local _, lootName, lootQuantity, _, lootQuality, _, isQuestItem, _, isActive = GetLootSlotInfo(i)
-            if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 3 then
-                TBCEPGP:LootItemAddOnMsg(lootName)
+            if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 1 then
+                local itemLink = GetLootSlotLink(i)
+                TBCEPGP:LootItemAddOnMsg(itemLink)
             end
         end
     end
@@ -2328,14 +2358,13 @@ function TBCEPGP:LootRollAddOnMsg(Roll, Index)
 end
 
 function TBCEPGP:LootItemAddOnMsg(itemName)
-    local _, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount,
-    itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemName)
-
-    local GPValue = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+    local itemStuff = TBCEPGP:CheckItemInfo(itemName)
+    local GPValue = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
 
     if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
         local prefix = "TBCEPGPItem"
-        local message = "Item:" .. itemName .. ":" .. itemTexture .. ":" .. GPValue .. ":" .. itemLink .. ":"
+        --local message = "Item:" .. itemName .. ":" .. itemTexture .. ":" .. GPValue .. ":" .. itemLink .. ":"
+        local message = "Item:" .. itemStuff.itemName .. ":" .. itemStuff.itemTexture .. ":" .. GPValue .. ":" .. itemStuff.itemLink .. ":"
         C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
     end
 end
