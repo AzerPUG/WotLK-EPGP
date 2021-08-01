@@ -921,14 +921,17 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                         players[curGUID].Class = subStringList[4]
                         players[curGUID].EP = subStringList[5]
                         players[curGUID].GP = subStringList[6]
+                        TBCEPGP:CalculatePriority(curGUID, subStringList[5], subStringList[6])
                     else
                         local curGUID = subStringList[1]
                         if players[curGUID].Update < subStringList[3] then
+                            
                             players[curGUID].Name = subStringList[2]
                             players[curGUID].Update = subStringList[3]
                             players[curGUID].Class = subStringList[4]
                             players[curGUID].EP = subStringList[5]
                             players[curGUID].GP = subStringList[6]
+                            TBCEPGP:CalculatePriority(curGUID, subStringList[5], subStringList[6])
                         end
                     end
                     for _, value in pairs(players) do
@@ -2072,8 +2075,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
-
-        curPR = TBCEPGP:CalculatePriority(key, curEP, curGP)
+        curPR = value.PR
 
         curPlayerFrame:Show()
 
@@ -2158,8 +2160,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
-
-        curPR = TBCEPGP:CalculatePriority(key, curEP, curGP)
+        curPR = value.PR
 
         curPlayerFrame:Show()
 
