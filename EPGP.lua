@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 24
+TBCEPGP.Version = 25
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -19,17 +19,17 @@ local FilterRaid = false
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
 if EPGPChangeLog == nil then EPGPChangeLog = {} end
 
-local classNumbers =
+local classInfo =
 {
-     [1] = {"Warrior", "Wa",},
-     [2] = {"Paladin", "Pa",},
-     [3] = {"Hunter", "Hu",},
-     [4] = {"Rogue", "Ro",},
-     [5] = {"Priest", "Pr",},
-     [7] = {"Shaman", "Sh",},
-     [8] = {"Mage", "Ma",},
-     [9] = {"Warlock", "Wl",},
-    [11] = {"Druid", "Dr",},
+     [1] = {ClassName = "Warrior", ClassColor = "FFC69B6D"},
+     [2] = {ClassName = "Paladin", ClassColor = "FFF48CBA"},
+     [3] = {ClassName =  "Hunter", ClassColor = "FFAAD372"},
+     [4] = {ClassName =   "Rogue", ClassColor = "FFFFF468"},
+     [5] = {ClassName =  "Priest", ClassColor = "FFFFFFFF"},
+     [7] = {ClassName =  "Shaman", ClassColor = "FF0070DD"},
+     [8] = {ClassName =    "Mage", ClassColor = "FF3FC7EB"},
+     [9] = {ClassName = "Warlock", ClassColor = "FF8788EE"},
+    [11] = {ClassName =   "Druid", ClassColor = "FFFF7C0A"},
 }
 
 local filteredClasses =
@@ -704,10 +704,12 @@ function TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
             players[curGUID].Class = curClass
             players[curGUID].EP = 1
             players[curGUID].GP = 1
+            players[curGUID].PR = players[curGUID].EP / players[curGUID].GP
             local year, month, date = TBCEPGP:GetDateTime()
             local dateString = year .. month .. date
             print("Adding Target to DataTable:", curName, "-", curGUID)
             players[curGUID][dateString] = {}
+            TBCEPGP:FilterPlayers()
         else
             print("Player already in list!")
         end
@@ -925,7 +927,6 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                     else
                         local curGUID = subStringList[1]
                         if players[curGUID].Update < subStringList[3] then
-                            
                             players[curGUID].Name = subStringList[2]
                             players[curGUID].Update = subStringList[3]
                             players[curGUID].Class = subStringList[4]
@@ -1383,23 +1384,6 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrameCloseButton:SetPoint("TOPRIGHT", EPGPAdminFrame, "TOPRIGHT", -3, -3)
     EPGPAdminFrameCloseButton:SetScript("OnClick", function() EPGPAdminFrame:Hide() end)
 
-    local AddToDataBaseButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
-    AddToDataBaseButton:SetSize(75, 20)
-    AddToDataBaseButton:SetPoint("BOTTOMLEFT", EPGPAdminFrame, "BOTTOMLEFT", 9, 15)
-    AddToDataBaseButton:SetFrameStrata("HIGH")
-    AddToDataBaseButton:SetScript("OnClick",
-    function()
-        local players = TBCEPGP.DataTable.Players
-        local unitGUID = UnitGUID("Target")
-        local unitName = UnitName("Target")
-        local _, _, unitClass = UnitClass("Target")
-        TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
-        TBCEPGP:FillAdminFrameScrollPanel(players)
-    end)
-    AddToDataBaseButton.text = AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
-    AddToDataBaseButton.text:SetPoint("CENTER", 0, 0)
-    AddToDataBaseButton.text:SetText("Add Target")
-
     EPGPAdminFrame.FilterClassesButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
     EPGPAdminFrame.FilterClassesButton:SetSize(75, 20)
     EPGPAdminFrame.FilterClassesButton:SetPoint("TOP", EPGPAdminFrame.Header.Class, "BOTTOM", 0, -321)
@@ -1414,9 +1398,46 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.FilterClassesButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.FilterClassesButton:SetFrameLevel(4)
 
+    local PurgeConfirmWindow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
+    PurgeConfirmWindow:SetSize(300, 150)
+    PurgeConfirmWindow:SetPoint("CENTER", 0, 200)
+    PurgeConfirmWindow:SetFrameStrata("DIALOG")
+    PurgeConfirmWindow:SetBackdrop({
+        bgFile = "Interface/Tooltips/UI-Tooltip-Background",
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 3, right = 3, top = 3, bottom = 3},
+    })
+    PurgeConfirmWindow:SetBackdropColor(1, 0.25, 0.25, 1)
+
+    PurgeConfirmWindow.Header = PurgeConfirmWindow:CreateFontString("PurgeConfirmWindow", "ARTWORK", "GameFontNormalHuge")
+    PurgeConfirmWindow.Header:SetSize(PurgeConfirmWindow:GetWidth(), 25)
+    PurgeConfirmWindow.Header:SetPoint("TOP", 0, -5)
+    PurgeConfirmWindow.Header:SetText("|cFFFF0000WARNING!|r")
+
+    PurgeConfirmWindow.WarningText = PurgeConfirmWindow:CreateFontString("PurgeConfirmWindow", "ARTWORK", "GameFontNormalLarge")
+    PurgeConfirmWindow.WarningText:SetSize(PurgeConfirmWindow:GetWidth(), 50)
+    PurgeConfirmWindow.WarningText:SetPoint("TOP", PurgeConfirmWindow.Header, "BOTTOM", 0, -10)
+    PurgeConfirmWindow.WarningText:SetText("|cFFFF0000Are you sure you want to purge\nthe entire dataTable?\nThis can not be undone!|r")
+
+    PurgeConfirmWindow.ConfirmButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
+    PurgeConfirmWindow.ConfirmButton:SetSize(75, 25)
+    PurgeConfirmWindow.ConfirmButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", -50, 35)
+    PurgeConfirmWindow.ConfirmButton:SetText("Confirm")
+    PurgeConfirmWindow.ConfirmButton:SetScript("OnClick", function() TBCEPGP:PurgeDataTable() PurgeConfirmWindow:Hide() end)
+
+    PurgeConfirmWindow.CancelButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
+    PurgeConfirmWindow.CancelButton:SetSize(75, 25)
+    PurgeConfirmWindow.CancelButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", 50, 35)
+    PurgeConfirmWindow.CancelButton:SetText("Cancel")
+    PurgeConfirmWindow.CancelButton:SetScript("OnClick", function() PurgeConfirmWindow:Hide() end)
+
+    PurgeConfirmWindow:Hide()
+
     local DecayConfirmWindow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     DecayConfirmWindow:SetSize(300, 150)
     DecayConfirmWindow:SetPoint("CENTER", 0, 200)
+    DecayConfirmWindow:SetFrameStrata("DIALOG")
     DecayConfirmWindow:SetBackdrop({
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -1449,6 +1470,18 @@ function TBCEPGP:CreateAdminFrame()
 
     DecayConfirmWindow:Hide()
 
+    EPGPAdminFrame.PurgeButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
+    EPGPAdminFrame.PurgeButton:SetSize(75, 20)
+    EPGPAdminFrame.PurgeButton:SetPoint("BOTTOMLEFT", EPGPAdminFrame, "BOTTOMLEFT", 10, 15)
+    EPGPAdminFrame.PurgeButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.PurgeButton:SetScript("OnClick",
+    function()
+        PurgeConfirmWindow:Show()
+    end)
+    EPGPAdminFrame.PurgeButton.text = EPGPAdminFrame.PurgeButton:CreateFontString("PurgeButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPAdminFrame.PurgeButton.text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.PurgeButton.text:SetText("Purge")
+
     EPGPAdminFrame.OptionsButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
     EPGPAdminFrame.OptionsButton:SetSize(75, 20)
     EPGPAdminFrame.OptionsButton:SetPoint("BOTTOMRIGHT", EPGPAdminFrame, "BOTTOMRIGHT", -10, 15)
@@ -1462,9 +1495,26 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame.OptionsButton.text:SetText("Options")
 
+    EPGPAdminFrame.AddToDataBaseButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
+    EPGPAdminFrame.AddToDataBaseButton:SetSize(75, 20)
+    EPGPAdminFrame.AddToDataBaseButton:SetPoint("Right", EPGPAdminFrame.OptionsButton, "Left", -10, 0)
+    EPGPAdminFrame.AddToDataBaseButton:SetFrameStrata("HIGH")
+    EPGPAdminFrame.AddToDataBaseButton:SetScript("OnClick",
+    function()
+        local players = TBCEPGP.DataTable.Players
+        local unitGUID = UnitGUID("Target")
+        local unitName = UnitName("Target")
+        local _, _, unitClass = UnitClass("Target")
+        TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
+        TBCEPGP:FillAdminFrameScrollPanel(players)
+    end)
+    EPGPAdminFrame.AddToDataBaseButton.text = EPGPAdminFrame.AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPAdminFrame.AddToDataBaseButton.text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.AddToDataBaseButton.text:SetText("Add Target")
+
     EPGPAdminFrame.DecayButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelButtonTemplate")
     EPGPAdminFrame.DecayButton:SetSize(75, 20)
-    EPGPAdminFrame.DecayButton:SetPoint("Right", EPGPAdminFrame.OptionsButton, "Left", -10, 0)
+    EPGPAdminFrame.DecayButton:SetPoint("Right", EPGPAdminFrame.AddToDataBaseButton, "Left", -10, 0)
     EPGPAdminFrame.DecayButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.DecayButton:SetScript("OnClick",
     function()
@@ -1887,6 +1937,11 @@ function TBCEPGP:DecayDataTable()
     TBCEPGP:FilterPlayers()
 end
 
+function TBCEPGP:PurgeDataTable()
+    TBCEPGPDataTable.Players = {}
+    TBCEPGP:FilterPlayers()
+end
+
 function TBCEPGP:MassChange(Points)
     local PointsChange = tonumber(EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:GetText())
     if PointsChange ~= nil then
@@ -2015,6 +2070,10 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             curPlayerFrame.curPR:SetPoint("LEFT", curPlayerFrame.curGP, "RIGHT", -4, 0)
             curPlayerFrame.curPR:SetTextColor(1, 1, 1, 1)
 
+            curPlayerFrame.delButton = CreateFrame("Button", nil, curPlayerFrame, "UIPanelCloseButton")
+            curPlayerFrame.delButton:SetSize(20, 20)
+            curPlayerFrame.delButton:SetPoint("RIGHT", curPlayerFrame.curPR, "RIGHT", -12, 0)
+
             curPlayerFrame.changeEP:HookScript("OnEditFocusLost",
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeEP:GetText())
@@ -2054,6 +2113,13 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             end)
         end
 
+        curPlayerFrame.delButton:SetScript("OnClick", function()
+            print(value.Name)
+
+            TBCEPGPDataTable.Players[key] = nil
+            TBCEPGP:FilterPlayers()
+        end)
+
         if EPGPAdminFrame.EPLocked == true then
             curPlayerFrame.changeEP:Hide()
         elseif EPGPAdminFrame.EPLocked == false then
@@ -2079,8 +2145,11 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
         curPlayerFrame:Show()
 
-        curPlayerFrame.Name:SetText(curName)
-        curPlayerFrame.Class:SetText(classNumbers[curClass][1])
+        local curClassColor = "|c" .. classInfo[curClass].ClassColor
+        local curClassName = classInfo[curClass].ClassName
+
+        curPlayerFrame.Name:SetText(curClassColor .. curName .. "|r")
+        curPlayerFrame.Class:SetText(curClassColor .. curClassName .. "|r")
         curPlayerFrame.curEP:SetText(curEP)
         curPlayerFrame.curGP:SetText(curGP)
         curPlayerFrame.curPR:SetText(curPR)
@@ -2164,8 +2233,11 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
         curPlayerFrame:Show()
 
-        curPlayerFrame.Name:SetText(curName)
-        curPlayerFrame.Class:SetText(classNumbers[curClass][1])
+        local curClassColor = "|c" .. classInfo[curClass].ClassColor
+        local curClassName = classInfo[curClass].ClassName
+
+        curPlayerFrame.Name:SetText(curClassColor .. curName .. "|r")
+        curPlayerFrame.Class:SetText(curClassColor .. curClassName .. "|r")
         curPlayerFrame.curEP:SetText(curEP)
         curPlayerFrame.curGP:SetText(curGP)
         curPlayerFrame.curPR:SetText(curPR)
