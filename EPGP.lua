@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 25
+TBCEPGP.Version = 27
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -1953,6 +1953,7 @@ function TBCEPGP:MassChange(Points)
             if PointsChange ~= 0 then
                 PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
                 EPGPChangeLog[string.format("%s-%d", key, value.Update)] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = PointsChange, Admin = UnitName("Player")}
+                TBCEPGP:CalculatePriority(key, value.EP, value.GP)
             end
         end
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:SetText(0)
