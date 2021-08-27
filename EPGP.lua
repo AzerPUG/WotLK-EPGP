@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 27
+TBCEPGP.Version = 28
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -58,9 +58,7 @@ function TBCEPGP:OnLoad()
     TBCEPGP:RegisterEvents("GROUP_ROSTER_UPDATE", function(...) TBCEPGP.Events:GroupRosterUpdate(...) end)
     TBCEPGP:RegisterEvents("LOOT_OPENED", function(...) TBCEPGP.Events:LootOpened(...) end)
 
-    EventFrame:SetScript("OnEvent", function(...)
-        TBCEPGP:OnEvent(...)
-    end)
+    EventFrame:SetScript("OnEvent", function(...) TBCEPGP:OnEvent(...) end)
 
     UpdateFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     UpdateFrame:SetPoint("CENTER", 0, 250)
@@ -999,6 +997,16 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP:CreateFilterButtons()
     ShowAdminViewCheckButton:SetChecked(TBCEPGPShowAdminView)
     TBCEPGP:ShareVersion()
+
+    TBCEPGP:ForceRecalculate()
+end
+
+function TBCEPGP:ForceRecalculate()
+    local Players = TBCEPGPDataTable.Players
+    for curPlayer, playerData in pairs(Players) do
+        Players[curPlayer].PR = TBCEPGP:CalculatePriority(curPlayer, playerData.EP, playerData.GP)
+    end
+    TBCEPGP:FilterPlayers()
 end
 
 function TBCEPGP:DelayedExecution(delayTime, delayedFunction)
@@ -1954,6 +1962,7 @@ function TBCEPGP:MassChange(Points)
                 PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
                 EPGPChangeLog[string.format("%s-%d", key, value.Update)] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = PointsChange, Admin = UnitName("Player")}
                 TBCEPGP:CalculatePriority(key, value.EP, value.GP)
+                TBCEPGPDataTable.Players[key].Update = time()
             end
         end
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:SetText(0)
@@ -2272,7 +2281,6 @@ function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
     local curPR = nil
     if curEP == 0 or curGP == 0 then curPR = 0 else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
     TBCEPGP.DataTable.Players[curGUID].PR = curPR
-    TBCEPGP.DataTable.Players[curGUID].Update = time()
     return curPR
 end
 
@@ -2481,6 +2489,10 @@ TBCEPGP.SlashCommands["loot"] = function(value)
     EPGPLootFrame:Show()
 end
 
+TBCEPGP.SlashCommands["recalc"] = function(value)
+    TBCEPGP:ForceRecalculate()
+end
+
 TBCEPGP.SlashCommands["Roll"] = TBCEPGP.SlashCommands["roll"]
 TBCEPGP.SlashCommands["ROLL"] = TBCEPGP.SlashCommands["roll"]
 
@@ -2495,3 +2507,6 @@ TBCEPGP.SlashCommands["SHOW"] = TBCEPGP.SlashCommands["show"]
 
 TBCEPGP.SlashCommands["Loot"] = TBCEPGP.SlashCommands["loot"]
 TBCEPGP.SlashCommands["LOOT"] = TBCEPGP.SlashCommands["loot"]
+
+TBCEPGP.SlashCommands["ReCalc"] = TBCEPGP.SlashCommands["recalc"]
+TBCEPGP.SlashCommands["RECALC"] = TBCEPGP.SlashCommands["recalc"]
