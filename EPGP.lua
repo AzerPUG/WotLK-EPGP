@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 28
+TBCEPGP.Version = 29
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -999,6 +999,10 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP:ShareVersion()
 
     TBCEPGP:ForceRecalculate()
+
+    if TBCEPGPVersionNumber ~= nil then TBCEPGPVersionNumber = nil end
+    TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version}
+    DevTools_Dump(TBCEPGPVersionData)
 end
 
 function TBCEPGP:ForceRecalculate()
@@ -1170,9 +1174,25 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header:SetPoint("TOP", -11, -20)
     EPGPAdminFrame.Header:SetSize(AdminScrollPanel:GetWidth(), 50)
 
+    EPGPAdminFrame.Header.Number = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
+    EPGPAdminFrame.Header.Number:SetSize(20, 24)
+    EPGPAdminFrame.Header.Number:SetPoint("TOPLEFT", 5, 0)
+    EPGPAdminFrame.Header.Number:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPAdminFrame.Header.Number:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPAdminFrame.Header.Number.Text = EPGPAdminFrame.Header.Number:CreateFontString("EPGPAdminFrame.Header.Number.Text", "ARTWORK", "GameFontNormal")
+    EPGPAdminFrame.Header.Number.Text:SetSize(EPGPAdminFrame.Header.Number:GetWidth(), EPGPAdminFrame.Header.Number:GetHeight())
+    EPGPAdminFrame.Header.Number.Text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Number.Text:SetTextColor(1, 1, 1, 1)
+    EPGPAdminFrame.Header.Number.Text:SetText("#")
+
     EPGPAdminFrame.Header.Name = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
     EPGPAdminFrame.Header.Name:SetSize(100, 24)
-    EPGPAdminFrame.Header.Name:SetPoint("TOPLEFT", 5, 0)
+    EPGPAdminFrame.Header.Name:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.Number, "BOTTOMRIGHT", -4, 0)
     EPGPAdminFrame.Header.Name:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
         edgeSize = 10,
@@ -1182,7 +1202,7 @@ function TBCEPGP:CreateAdminFrame()
 
     EPGPAdminFrame.Header.Name.Text = EPGPAdminFrame.Header.Name:CreateFontString("EPGPAdminFrame.Header.Name.Text", "ARTWORK", "GameFontNormal")
     EPGPAdminFrame.Header.Name.Text:SetSize(EPGPAdminFrame.Header.Name:GetWidth(), EPGPAdminFrame.Header.Name:GetHeight())
-    EPGPAdminFrame.Header.Name.Text:SetPoint("CENTER", 0, 0)
+    EPGPAdminFrame.Header.Name.Text:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.Number, "BOTTOMRIGHT", -4, 0)
     EPGPAdminFrame.Header.Name.Text:SetTextColor(1, 1, 1, 1)
     EPGPAdminFrame.Header.Name.Text:SetText("Name")
 
@@ -1203,7 +1223,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.Class.Text:SetText("Class")
 
     EPGPAdminFrame.Header.curEP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
-    EPGPAdminFrame.Header.curEP:SetSize(175, 24)
+    EPGPAdminFrame.Header.curEP:SetSize(165, 24)
     EPGPAdminFrame.Header.curEP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.Class, "BOTTOMRIGHT", -4, 0)
     EPGPAdminFrame.Header.curEP:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -1238,7 +1258,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curEP.changeEP:Hide()
 
     EPGPAdminFrame.Header.curGP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
-    EPGPAdminFrame.Header.curGP:SetSize(175, 24)
+    EPGPAdminFrame.Header.curGP:SetSize(165, 24)
     EPGPAdminFrame.Header.curGP:SetPoint("BOTTOMLEFT", EPGPAdminFrame.Header.curEP, "BOTTOMRIGHT", -4, 0)
     EPGPAdminFrame.Header.curGP:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -1655,9 +1675,25 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header:SetPoint("TOP", -11, -20)
     EPGPUserFrame.Header:SetSize(UserScrollPanel:GetWidth(), 50)
 
+    EPGPUserFrame.Header.Number = CreateFrame("Frame", nil, EPGPUserFrame.Header, "BackdropTemplate")
+    EPGPUserFrame.Header.Number:SetSize(20, 24)
+    EPGPUserFrame.Header.Number:SetPoint("TOPLEFT", 5, 0)
+    EPGPUserFrame.Header.Number:SetBackdrop({
+        edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
+        edgeSize = 10,
+        insets = {left = 2, right = 2, top = 2, bottom = 2},
+    })
+    EPGPUserFrame.Header.Number:SetBackdropColor(1, 1, 1, 1)
+
+    EPGPUserFrame.Header.Number.Text = EPGPUserFrame.Header.Number:CreateFontString("EPGPUserFrame.Header.Number.Text", "ARTWORK", "GameFontNormal")
+    EPGPUserFrame.Header.Number.Text:SetSize(EPGPUserFrame.Header.Number:GetWidth(), EPGPUserFrame.Header.Number:GetHeight())
+    EPGPUserFrame.Header.Number.Text:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.Header.Number.Text:SetTextColor(1, 1, 1, 1)
+    EPGPUserFrame.Header.Number.Text:SetText("#")
+
     EPGPUserFrame.Header.Name = CreateFrame("Frame", nil, EPGPUserFrame.Header, "BackdropTemplate")
     EPGPUserFrame.Header.Name:SetSize(100, 24)
-    EPGPUserFrame.Header.Name:SetPoint("TOPLEFT", 5, 0)
+    EPGPUserFrame.Header.Name:SetPoint("BOTTOMLEFT", EPGPUserFrame.Header.Number, "BOTTOMRIGHT", -4, 0)
     EPGPUserFrame.Header.Name:SetBackdrop({
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
         edgeSize = 10,
@@ -1846,6 +1882,18 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
     EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
 
+    EPGPUserFrame.PurgeButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
+    EPGPUserFrame.PurgeButton:SetSize(75, 20)
+    EPGPUserFrame.PurgeButton:SetPoint("BOTTOMLEFT", EPGPUserFrame, "BOTTOMLEFT", 10, 15)
+    EPGPUserFrame.PurgeButton:SetFrameStrata("HIGH")
+    EPGPUserFrame.PurgeButton:SetScript("OnClick",
+    function()
+        PurgeConfirmWindow:Show()
+    end)
+    EPGPUserFrame.PurgeButton.text = EPGPUserFrame.PurgeButton:CreateFontString("PurgeButton", "ARTWORK", "GameFontNormalTiny")
+    EPGPUserFrame.PurgeButton.text:SetPoint("CENTER", 0, 0)
+    EPGPUserFrame.PurgeButton.text:SetText("Purge")
+
     EPGPUserFrame.OptionsButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
     EPGPUserFrame.OptionsButton:SetSize(75, 20)
     EPGPUserFrame.OptionsButton:SetPoint("BOTTOMRIGHT", EPGPUserFrame, "BOTTOMRIGHT", -10, 15)
@@ -1952,23 +2000,25 @@ end
 
 function TBCEPGP:MassChange(Points)
     local PointsChange = tonumber(EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:GetText())
-    if PointsChange ~= nil then
+    if PointsChange ~= nil and PointsChange ~= 0 then
         local players = TBCEPGPDataTable.Players
         if filteredPlayers == nil then filteredPlayers = players end
-        for key, value in pairs(filteredPlayers) do
-            value[Points] = value[Points] + PointsChange
-            value.Update = time()
-            if PointsChange ~= 0 then
-                PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
-                EPGPChangeLog[string.format("%s-%d", key, value.Update)] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = PointsChange, Admin = UnitName("Player")}
-                TBCEPGP:CalculatePriority(key, value.EP, value.GP)
-                TBCEPGPDataTable.Players[key].Update = time()
-            end
+        for key, _ in pairs(filteredPlayers) do
+            TBCEPGP:ChangePoints(key, Points, PointsChange)
         end
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:SetText(0)
         TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
         TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
     end
+end
+
+function TBCEPGP:ChangePoints(curGUID, Points, Amount)
+    Amount = TBCEPGP:MathRound(Amount * 1000) / 1000
+    local curPlayer = TBCEPGPDataTable.Players[curGUID]
+    curPlayer[Points] = curPlayer[Points] + Amount
+    curPlayer.Update = time()
+    EPGPChangeLog[string.format("%s-%d", curGUID, curPlayer.Update)] = {Name = curPlayer.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = Amount, Admin = UnitName("Player")}
+    TBCEPGP:CalculatePriority(curGUID, curPlayer.EP, curPlayer.GP)
 end
 
 function TBCEPGP:FilterPlayers()
@@ -2041,9 +2091,14 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             })
             curPlayerFrame:SetBackdropColor(0.25, 0.25, 0.25, 1)
 
+            curPlayerFrame.Number = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.Number:SetSize(EPGPAdminFrame.Header.Number:GetWidth(), 25)
+            curPlayerFrame.Number:SetPoint("LEFT", 0, 0)
+            curPlayerFrame.Number:SetTextColor(1, 1, 1, 1)
+
             curPlayerFrame.Name = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.Name:SetSize(EPGPAdminFrame.Header.Name:GetWidth(), 25)
-            curPlayerFrame.Name:SetPoint("LEFT", 0, 0)
+            curPlayerFrame.Name:SetPoint("LEFT", curPlayerFrame.Number, "RIGHT", -4, 0)
             curPlayerFrame.Name:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.Class = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
@@ -2088,38 +2143,26 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeEP:GetText())
 
-                players[curPlayerFrame.key].EP = players[curPlayerFrame.key].EP + PointsChange
-                players[curPlayerFrame.key].Update = time()
+                TBCEPGP:ChangePoints(key, "EP", PointsChange)
+
                 curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
 
-                local curPR = nil
-                curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                local curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
-                local epoch = time()
-                if PointsChange ~= 0 then
-                    PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
-                    EPGPChangeLog[epoch] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = "EP", Amount = PointsChange, Admin = UnitName("Player")}
-                end
             end)
 
             curPlayerFrame.changeGP:HookScript("OnEditFocusLost",
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeGP:GetText())
 
-                players[curPlayerFrame.key].GP = players[curPlayerFrame.key].GP + PointsChange
-                players[curPlayerFrame.key].Update = time()
+                TBCEPGP:ChangePoints(key, "GP", PointsChange)
+
                 curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
 
-                local curPR = nil
-                curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                local curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
-                local epoch = time()
-                if PointsChange ~= 0 then
-                    PointsChange = TBCEPGP:MathRound(PointsChange * 1000) / 1000
-                    EPGPChangeLog[epoch] = {Name = value.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = "GP", Amount = PointsChange, Admin = UnitName("Player")}
-                end
             end)
         end
 
@@ -2151,7 +2194,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
-        curPR = value.PR
+        curPR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
 
         curPlayerFrame:Show()
 
@@ -2163,6 +2206,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         curPlayerFrame.curEP:SetText(curEP)
         curPlayerFrame.curGP:SetText(curGP)
         curPlayerFrame.curPR:SetText(curPR)
+        curPlayerFrame.Number:SetText(index)
 
         index = index + 1
     end
@@ -2204,9 +2248,14 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
             })
             curPlayerFrame:SetBackdropColor(0.25, 0.25, 0.25, 1)
 
+            curPlayerFrame.Number = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
+            curPlayerFrame.Number:SetSize(EPGPUserFrame.Header.Number:GetWidth(), 25)
+            curPlayerFrame.Number:SetPoint("LEFT", 0, 0)
+            curPlayerFrame.Number:SetTextColor(1, 1, 1, 1)
+
             curPlayerFrame.Name = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
             curPlayerFrame.Name:SetSize(EPGPUserFrame.Header.Name:GetWidth(), 25)
-            curPlayerFrame.Name:SetPoint("LEFT", 0, 0)
+            curPlayerFrame.Name:SetPoint("LEFT", curPlayerFrame.Number, "RIGHT", -4, 0)
             curPlayerFrame.Name:SetTextColor(1, 1, 1, 1)
 
             curPlayerFrame.Class = curPlayerFrame:CreateFontString("curPlayerFrame", "ARTWORK", "GameFontNormal")
@@ -2239,7 +2288,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
-        curPR = value.PR
+        curPR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
 
         curPlayerFrame:Show()
 
@@ -2251,6 +2300,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curPlayerFrame.curEP:SetText(curEP)
         curPlayerFrame.curGP:SetText(curGP)
         curPlayerFrame.curPR:SetText(curPR)
+        curPlayerFrame.Number:SetText(index)
 
         index = index + 1
     end
