@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 29
+TBCEPGP.Version = 33
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -106,22 +106,12 @@ function TBCEPGP:OnLoad()
 
     EPGPOptionsPanel.adminsEditBox = CreateFrame("EditBox", nil, EPGPOptionsPanel, "InputBoxTemplate")
     EPGPOptionsPanel.adminsEditBox:SetSize(200, 25)
-    EPGPOptionsPanel.adminsEditBox:SetPoint("TOPLEFT", 25, -125)
+    EPGPOptionsPanel.adminsEditBox:SetPoint("TOP", EPGPOptionsPanel.adminsEditBoxText, "BOTTOM", 0, -5)
     EPGPOptionsPanel.adminsEditBox:SetAutoFocus(false)
     EPGPOptionsPanel.adminsEditBox:SetScript("OnEditFocusLost", function() TBCEPGPAdminList = TBCEPGP:splitCharacterNames(EPGPOptionsPanel.adminsEditBox:GetText()) end)
-    EPGPOptionsPanel.adminsEditBox:SetScript("OnShow",
-    function()
-        local adminsToSet = ""
-        if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
-            for i = 1, #TBCEPGPAdminList do
-                adminsToSet = TBCEPGPAdminList[i] .. " "
-            end
-            EPGPOptionsPanel.adminsEditBox:SetText(adminsToSet)
-        end
-    end)
 
     EPGPOptionsPanel.showAdminViewCheckButton = CreateFrame("CheckButton", "ShowAdminViewCheckButton", EPGPOptionsPanel, "ChatConfigCheckButtonTemplate");
-    EPGPOptionsPanel.showAdminViewCheckButton:SetPoint("TOPLEFT", 25, -175);
+    EPGPOptionsPanel.showAdminViewCheckButton:SetPoint("TOP", EPGPOptionsPanel.adminsEditBox, "BOTTOMLEFT", 0, -20);
     EPGPOptionsPanel.showAdminViewCheckButton:SetScript("OnClick", function()
         TBCEPGPShowAdminView = EPGPOptionsPanel.showAdminViewCheckButton:GetChecked()
         if TBCEPGPShowAdminView == true then
@@ -135,11 +125,82 @@ function TBCEPGP:OnLoad()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
 
+    EPGPOptionsPanel.CalculationsText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    EPGPOptionsPanel.CalculationsText:SetSize(200, 50)
+    EPGPOptionsPanel.CalculationsText:SetJustifyH("LEFT")
+    EPGPOptionsPanel.CalculationsText:SetPoint("TOPLEFT", EPGPOptionsPanel.showAdminViewCheckButton, "BOTTOMLEFT", 0, -20)
+    EPGPOptionsPanel.CalculationsText:SetText("OffSet for PR Calculations.\nUsually: PR = EP / GP.\n\nCurrent Calculations:")
+
+    EPGPOptionsPanel.CalculationsLabel = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    EPGPOptionsPanel.CalculationsLabel:SetSize(200, 25)
+    EPGPOptionsPanel.CalculationsLabel:SetJustifyH("LEFT")
+    EPGPOptionsPanel.CalculationsLabel:SetPoint("TOPLEFT", EPGPOptionsPanel.CalculationsText, "BOTTOMLEFT", 0, 5)
+
+    EPGPOptionsPanel.EPOffSetText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    EPGPOptionsPanel.EPOffSetText:SetSize(75, 25)
+    EPGPOptionsPanel.EPOffSetText:SetJustifyH("LEFT")
+    EPGPOptionsPanel.EPOffSetText:SetPoint("TOPLEFT", EPGPOptionsPanel.CalculationsLabel, "BOTTOMLEFT", 0, -10)
+    EPGPOptionsPanel.EPOffSetText:SetText("EP OffSet:")
+
+    EPGPOptionsPanel.EPOffSet = CreateFrame("EditBox", nil, EPGPOptionsPanel, "InputBoxTemplate")
+    EPGPOptionsPanel.EPOffSet:SetSize(50, 25)
+    EPGPOptionsPanel.EPOffSet:SetPoint("LEFT", EPGPOptionsPanel.EPOffSetText, "RIGHT", 0, 0)
+    EPGPOptionsPanel.EPOffSet:SetAutoFocus(false)
+    EPGPOptionsPanel.EPOffSet:SetScript("OnEditFocusLost",
+    function()
+        TBCEPGP:ChangePRCalculations()
+        TBCEPGP:SavePRCalculations()
+    end)
+
+    EPGPOptionsPanel.GPOffSetText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    EPGPOptionsPanel.GPOffSetText:SetSize(75, 25)
+    EPGPOptionsPanel.GPOffSetText:SetJustifyH("LEFT")
+    EPGPOptionsPanel.GPOffSetText:SetPoint("TOPLEFT", EPGPOptionsPanel.EPOffSetText, "BOTTOMLEFT", 0, -10)
+    EPGPOptionsPanel.GPOffSetText:SetText("GP OffSet:")
+
+    EPGPOptionsPanel.GPOffSet = CreateFrame("EditBox", nil, EPGPOptionsPanel, "InputBoxTemplate")
+    EPGPOptionsPanel.GPOffSet:SetSize(50, 25)
+    EPGPOptionsPanel.GPOffSet:SetPoint("LEFT", EPGPOptionsPanel.GPOffSetText, "RIGHT", 0, 0)
+    EPGPOptionsPanel.GPOffSet:SetAutoFocus(false)
+    EPGPOptionsPanel.GPOffSet:SetScript("OnEditFocusLost",
+    function()
+        TBCEPGP:ChangePRCalculations()
+        TBCEPGP:SavePRCalculations()
+    end)
+
+    TBCEPGP:ChangePRCalculations()
+
     TBCEPGP:AddTooltipScript()
     TBCEPGP:CreateLootFrame()
     TBCEPGP:CreateLogFrame()
 
+    EPGPOptionsPanel:SetScript("OnShow",
+    function()
+        TBCEPGP:ChangePRCalculations()
+        local adminsToSet = ""
+        if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
+            for i = 1, #TBCEPGPAdminList do
+                adminsToSet = TBCEPGPAdminList[i] .. " "
+            end
+            EPGPOptionsPanel.adminsEditBox:SetText(adminsToSet)
+        end
+    end)
     EPGPOptionsPanel:Hide()
+end
+
+function TBCEPGP:ChangePRCalculations()
+    local EPOffSet = EPGPOptionsPanel.EPOffSet:GetNumber()
+    local GPOffSet = EPGPOptionsPanel.GPOffSet:GetNumber()
+    if EPOffSet > 0 then EPOffSet = string.format("+%d", EPOffSet) elseif EPOffSet == 0 then EPOffSet = "" end
+    if GPOffSet > 0 then GPOffSet = string.format("+%d", GPOffSet) elseif GPOffSet == 0 then GPOffSet = "" end
+    local CalcString = string.format("|cFF00FFFFPR = (EP%s) / (GP%s)|r", tostring(EPOffSet), tostring(GPOffSet))
+    EPGPOptionsPanel.CalculationsLabel:SetText(CalcString)
+end
+
+function TBCEPGP:SavePRCalculations()
+    local EPOffSet = EPGPOptionsPanel.EPOffSet:GetNumber()
+    local GPOffSet = EPGPOptionsPanel.GPOffSet:GetNumber()
+    TBCEPGPPRCalc = {tostring(EPOffSet), tostring(GPOffSet)}
 end
 
 function TBCEPGP:CreateLogFrame()
@@ -1001,8 +1062,12 @@ function TBCEPGP:VarsAndAddonLoaded()
     TBCEPGP:ForceRecalculate()
 
     if TBCEPGPVersionNumber ~= nil then TBCEPGPVersionNumber = nil end
-    TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version}
+    TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version, ErrorInfo = {}}
     DevTools_Dump(TBCEPGPVersionData)
+
+    TBCEPGP:ChangePRCalculations()
+    EPGPOptionsPanel.EPOffSet:SetText(TBCEPGPPRCalc[1])
+    EPGPOptionsPanel.GPOffSet:SetText(TBCEPGPPRCalc[2])
 end
 
 function TBCEPGP:ForceRecalculate()
@@ -2017,6 +2082,11 @@ function TBCEPGP:ChangePoints(curGUID, Points, Amount)
     local curPlayer = TBCEPGPDataTable.Players[curGUID]
     curPlayer[Points] = curPlayer[Points] + Amount
     curPlayer.Update = time()
+    if curGUID == nil or curPlayer.Update == nil then
+        local tempNumber = #TBCEPGPVersionData.ErrorInfo + 1
+        local y, m, d = TBCEPGP:GetDateTime()
+        TBCEPGPVersionData.ErrorInfo[tempNumber] = {Time = time(), Date = string.format("%s/%s/%s", d, m, y), GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version}
+    end
     EPGPChangeLog[string.format("%s-%d", curGUID, curPlayer.Update)] = {Name = curPlayer.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = Amount, Admin = UnitName("Player")}
     TBCEPGP:CalculatePriority(curGUID, curPlayer.EP, curPlayer.GP)
 end
@@ -2028,7 +2098,7 @@ function TBCEPGP:FilterPlayers()
 
     for key, value in pairs(players) do
         for i = 1, 11 do
-            if i == 6 or i == 10 then -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
+            if i == 6 or i == 10 then   -- Parsing out Monk(6) and DeathKnight(10) index numbers. (DH == 12)
             else
                 if filteredClasses[i] == true then
                     if players[key].Class == i then
@@ -2047,11 +2117,9 @@ function TBCEPGP:FilterPlayers()
     end
 
     if allFiltersOff == true then filteredPlayers = players end
-    
 
     if FilterRaid == true then
         local raidPlayers = {}
-        
         for _, GUID in ipairs(raidGUIDs) do
             if filteredPlayers[GUID] ~= nil then
                 raidPlayers[GUID] = filteredPlayers[GUID]
@@ -2143,12 +2211,12 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeEP:GetText())
 
-                TBCEPGP:ChangePoints(key, "EP", PointsChange)
+                TBCEPGP:ChangePoints(curPlayerFrame.key, "EP", PointsChange)
 
                 curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
 
-                local curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                local curPR = TBCEPGP:CalculatePriority(curPlayerFrame.key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
 
@@ -2156,19 +2224,17 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeGP:GetText())
 
-                TBCEPGP:ChangePoints(key, "GP", PointsChange)
+                TBCEPGP:ChangePoints(curPlayerFrame.key, "GP", PointsChange)
 
                 curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
 
-                local curPR = TBCEPGP:CalculatePriority(key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                local curPR = TBCEPGP:CalculatePriority(curPlayerFrame.key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
         end
 
         curPlayerFrame.delButton:SetScript("OnClick", function()
-            print(value.Name)
-
             TBCEPGPDataTable.Players[key] = nil
             TBCEPGP:FilterPlayers()
         end)
@@ -2328,6 +2394,8 @@ function TBCEPGP:ComparePlayers(sortTable, a, b)
 end
 
 function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
+    curEP = curEP + TBCEPGPPRCalc[1]
+    curGP = curGP + TBCEPGPPRCalc[2]
     local curPR = nil
     if curEP == 0 or curGP == 0 then curPR = 0 else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
     TBCEPGP.DataTable.Players[curGUID].PR = curPR
