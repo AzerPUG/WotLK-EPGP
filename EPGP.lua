@@ -1,6 +1,6 @@
 if TBCEPGP == nil then TBCEPGP = {} end
 TBCEPGP.Events = {}
-TBCEPGP.Version = 33
+TBCEPGP.Version = 34
 local AddOnName = "TBC-EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
@@ -1051,6 +1051,11 @@ function TBCEPGP:VarsAndAddonLoaded()
         TBCEPGP.DataTable = TBCEPGPDataTable
     end
 
+    if TBCEPGPPRCalc == nil then TBCEPGPPRCalc = {0, 0} end
+    TBCEPGP:ChangePRCalculations()
+    EPGPOptionsPanel.EPOffSet:SetText(TBCEPGPPRCalc[1])
+    EPGPOptionsPanel.GPOffSet:SetText(TBCEPGPPRCalc[2])
+
     TBCEPGP:TempDataChanger()
 
     TBCEPGP.CreateAdminFrame()
@@ -1064,10 +1069,6 @@ function TBCEPGP:VarsAndAddonLoaded()
     if TBCEPGPVersionNumber ~= nil then TBCEPGPVersionNumber = nil end
     TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version, ErrorInfo = {}}
     DevTools_Dump(TBCEPGPVersionData)
-
-    TBCEPGP:ChangePRCalculations()
-    EPGPOptionsPanel.EPOffSet:SetText(TBCEPGPPRCalc[1])
-    EPGPOptionsPanel.GPOffSet:SetText(TBCEPGPPRCalc[2])
 end
 
 function TBCEPGP:ForceRecalculate()
