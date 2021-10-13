@@ -105,16 +105,6 @@ TBCEPGP.InfoTable =
         [34852] = { itemLevel = 146, itemQuality = 4, itemEquipLoc = "INVTYPE_WRIST"   , itemName =    "Bracers of the Forgotten Vanquisher",},
     }
 }
-TBCEPGP.DataTable = -- DO NOT DELETE, DYNAMIC USE!
-{
-    ["Players"] =
-    {
 
-    },
-	["Dates"] =
-    {
-
-    },
-}
-
+TBCEPGP.DataTable = {["Players"] = {},} -- DO NOT DELETE, DYNAMIC USE!
 TBCEPGP.RegisteredEvents = {} -- DO NOT DELETE, DYNAMIC USE!

@@ -1069,6 +1069,10 @@ function TBCEPGP:VarsAndAddonLoaded()
     if TBCEPGPVersionNumber ~= nil then TBCEPGPVersionNumber = nil end
     TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version, ErrorInfo = {}}
     DevTools_Dump(TBCEPGPVersionData)
+
+    if TBCEPGPMinimums == nil then TBCEPGPMinimums = {} end
+    if TBCEPGPMinimums.EP == nil then TBCEPGPMinimums.EP = 1 end
+    if TBCEPGPMinimums.GP == nil then TBCEPGPMinimums.GP = 1 end
 end
 
 function TBCEPGP:ForceRecalculate()
@@ -1493,7 +1497,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.FilterClassesButton:SetFrameLevel(4)
 
     local PurgeConfirmWindow = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
-    PurgeConfirmWindow:SetSize(300, 150)
+    PurgeConfirmWindow:SetSize(300, 175)
     PurgeConfirmWindow:SetPoint("CENTER", 0, 200)
     PurgeConfirmWindow:SetFrameStrata("DIALOG")
     PurgeConfirmWindow:SetBackdrop({
@@ -1512,17 +1516,23 @@ function TBCEPGP:CreateAdminFrame()
     PurgeConfirmWindow.WarningText = PurgeConfirmWindow:CreateFontString("PurgeConfirmWindow", "ARTWORK", "GameFontNormalLarge")
     PurgeConfirmWindow.WarningText:SetSize(PurgeConfirmWindow:GetWidth(), 50)
     PurgeConfirmWindow.WarningText:SetPoint("TOP", PurgeConfirmWindow.Header, "BOTTOM", 0, -10)
-    PurgeConfirmWindow.WarningText:SetText("|cFFFF0000Are you sure you want to purge\nthe entire dataTable?\nThis can not be undone!|r")
+    PurgeConfirmWindow.WarningText:SetText("|cFFFF0000Are you sure you want to purge\nthe data and/or the players?\nThis can not be undone!!|r")
 
-    PurgeConfirmWindow.ConfirmButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
-    PurgeConfirmWindow.ConfirmButton:SetSize(75, 25)
-    PurgeConfirmWindow.ConfirmButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", -50, 35)
-    PurgeConfirmWindow.ConfirmButton:SetText("Confirm")
-    PurgeConfirmWindow.ConfirmButton:SetScript("OnClick", function() TBCEPGP:PurgeDataTable() PurgeConfirmWindow:Hide() end)
+    PurgeConfirmWindow.PurgeDataButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
+    PurgeConfirmWindow.PurgeDataButton:SetSize(100, 25)
+    PurgeConfirmWindow.PurgeDataButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", -75, 75)
+    PurgeConfirmWindow.PurgeDataButton:SetText("Purge Data")
+    PurgeConfirmWindow.PurgeDataButton:SetScript("OnClick", function() TBCEPGP:PurgeData() PurgeConfirmWindow:Hide() end)
+
+    PurgeConfirmWindow.PurgePlayersButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
+    PurgeConfirmWindow.PurgePlayersButton:SetSize(100, 25)
+    PurgeConfirmWindow.PurgePlayersButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", 75, 75)
+    PurgeConfirmWindow.PurgePlayersButton:SetText("Purge Players")
+    PurgeConfirmWindow.PurgePlayersButton:SetScript("OnClick", function() TBCEPGP:PurgePlayers() PurgeConfirmWindow:Hide() end)
 
     PurgeConfirmWindow.CancelButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
-    PurgeConfirmWindow.CancelButton:SetSize(75, 25)
-    PurgeConfirmWindow.CancelButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", 50, 35)
+    PurgeConfirmWindow.CancelButton:SetSize(100, 25)
+    PurgeConfirmWindow.CancelButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", 0, 35)
     PurgeConfirmWindow.CancelButton:SetText("Cancel")
     PurgeConfirmWindow.CancelButton:SetScript("OnClick", function() PurgeConfirmWindow:Hide() end)
 
@@ -2059,7 +2069,18 @@ function TBCEPGP:DecayDataTable()
     TBCEPGP:FilterPlayers()
 end
 
-function TBCEPGP:PurgeDataTable()
+function TBCEPGP:PurgeData()
+    for curGUID, curPlayerData in pairs(TBCEPGP.DataTable.Players) do
+        curPlayerData.EP = TBCEPGPMinimums.EP
+        curPlayerData.GP = TBCEPGPMinimums.GP
+        curPlayerData.Update = time()
+        TBCEPGP:CalculatePriority(curGUID, curPlayerData.EP, curPlayerData.GP)
+
+    end
+    TBCEPGP:FilterPlayers()
+end
+
+function TBCEPGP:PurgePlayers()
     TBCEPGPDataTable.Players = {}
     TBCEPGP:FilterPlayers()
 end
