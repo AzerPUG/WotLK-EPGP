@@ -17,6 +17,10 @@ local FilterButtonFrame = nil
 local FilterRaid = false
 local DecayConfirmWindow = nil
 local ReceiveSyncFrame = nil
+local NewPlayers = {}
+local currentSyncTicker = nil
+local SyncQueue = {}
+local NumPlayersInSync = 0
 
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
 if EPGPChangeLog == nil then EPGPChangeLog = {} end
@@ -253,29 +257,29 @@ function TBCEPGP:OnLoad()
     ReceiveSyncFrame.text:SetPoint("TOP", 0, -30)
     ReceiveSyncFrame.text:SetText("-----")
 
-    ReceiveSyncFrame.bar = CreateFrame("StatusBar", nil, ReceiveSyncFrame)
-    ReceiveSyncFrame.bar:SetSize(ReceiveSyncFrame:GetWidth() - 20, 18)
-    ReceiveSyncFrame.bar:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
-    ReceiveSyncFrame.bar:SetPoint("TOP", 0, -30)
-    ReceiveSyncFrame.bar:SetMinMaxValues(0, 100)
-    ReceiveSyncFrame.bar:SetValue(0)
-    ReceiveSyncFrame.bar.SyncProgress = ReceiveSyncFrame.bar:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    ReceiveSyncFrame.bar.SyncProgress:SetSize(50, 16)
-    ReceiveSyncFrame.bar.SyncProgress:SetPoint("CENTER", 0, -1)
-    ReceiveSyncFrame.bar.SyncProgress:SetText("0/100")
+    ReceiveSyncFrame.Bar = CreateFrame("StatusBar", nil, ReceiveSyncFrame)
+    ReceiveSyncFrame.Bar:SetSize(ReceiveSyncFrame:GetWidth() - 20, 18)
+    ReceiveSyncFrame.Bar:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
+    ReceiveSyncFrame.Bar:SetPoint("TOP", 0, -30)
+    ReceiveSyncFrame.Bar:SetMinMaxValues(0, 100)
+    ReceiveSyncFrame.Bar:SetValue(0)
+    ReceiveSyncFrame.Bar.SyncProgress = ReceiveSyncFrame.Bar:CreateFontString(nil, "ARTWORK", "GameFontNormal")
+    ReceiveSyncFrame.Bar.SyncProgress:SetSize(50, 16)
+    ReceiveSyncFrame.Bar.SyncProgress:SetPoint("CENTER", 0, -1)
+    ReceiveSyncFrame.Bar.SyncProgress:SetText("0/100")
     -- ReceiveSyncFrame.bar.CharName = ReceiveSyncFrame.bar:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     -- ReceiveSyncFrame.bar.CharName:SetSize(50, 16)
     -- ReceiveSyncFrame.bar.CharName:SetPoint("LEFT", 5, -1)
     -- ReceiveSyncFrame.bar.CharName:SetText(playerName)
-    ReceiveSyncFrame.bar.bg = ReceiveSyncFrame.bar:CreateTexture(nil, "BACKGROUND")
-    ReceiveSyncFrame.bar.bg:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
-    ReceiveSyncFrame.bar.bg:SetAllPoints(true)
-    ReceiveSyncFrame.bar.bg:SetVertexColor(1, 0, 0)
+    ReceiveSyncFrame.Bar.bg = ReceiveSyncFrame.Bar:CreateTexture(nil, "BACKGROUND")
+    ReceiveSyncFrame.Bar.bg:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
+    ReceiveSyncFrame.Bar.bg:SetAllPoints(true)
+    ReceiveSyncFrame.Bar.bg:SetVertexColor(1, 0, 0)
     -- ReceiveSyncFrame.bar.cooldown = ReceiveSyncFrame.bar:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     -- ReceiveSyncFrame.bar.cooldown:SetSize(25, 16)
     -- ReceiveSyncFrame.bar.cooldown:SetPoint("RIGHT", -5, 0)
     -- ReceiveSyncFrame.bar.cooldown:SetText("")
-    ReceiveSyncFrame.bar:SetStatusBarColor(0, 0.75, 1)
+    ReceiveSyncFrame.Bar:SetStatusBarColor(0, 0.75, 1)
 
     TBCEPGP:AddTooltipScript()
     TBCEPGP:CreateLootFrame()
@@ -897,16 +901,37 @@ end
 function TBCEPGP:SyncRaidersAddOnMsg()
     print("Trying to sync!")
     local players = TBCEPGPDataTable.Players
-    TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", #players))
+    
     for playerGUID, playerData in pairs(players) do
         local message = "Player:"
         if playerData.EP == nil then playerData.EP = 1 end
         if playerData.GP == nil then playerData.GP = 1 end
         message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
-        TBCEPGP:SendRaidGuildAddonMsg(message)
+        --TBCEPGP:SendRaidGuildAddonMsg(message)
+        table.insert(SyncQueue, message)
     end
-    TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
-    print("Sync AddOn Messages Send!")
+    TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", #SyncQueue))
+    -- TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
+    -- print("Sync AddOn Messages Send!")
+    if currentSyncTicker == nil then
+        currentSyncTicker = C_Timer.NewTicker(0.5, function() TBCEPGP:SendNextSyncBatch() end)
+    end
+end
+
+function TBCEPGP:SendNextSyncBatch()
+    for i = 1,5 do
+        if #SyncQueue > 0 then
+            local message = table.remove(SyncQueue, 1)
+            TBCEPGP:SendRaidGuildAddonMsg(message)
+        end
+    end
+
+    if #SyncQueue == 0 then
+        TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
+        currentSyncTicker:Cancel()
+        currentSyncTicker = nil
+        print("Sync AddOn Messages Send!")
+    end
 end
 
 function TBCEPGP:SendRaidGuildAddonMsg(message)
@@ -1052,6 +1077,7 @@ function TBCEPGP:CollectPlayersInRaid()
 end
 
 function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
+    --print("Received addon message from " .. sender .. ": " .. payload)
     local player = UnitName("PLAYER")
     if prefix == "TBCEPGPVersion" and sender ~= player then
         local version = TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
@@ -1062,22 +1088,29 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         local playerName = UnitName("player")
         local subPayload = payload
         local players = TBCEPGPDataTable.Players
-        local newPlayers = {}
         local subStringList = {}
         
         sender = string.match(sender, "(.*)-")
         if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
             if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
-                local command, arguments = string.match("([^:]):(.*)")
+                print(payload)
+                local command, arguments = string.match(payload, "([^:]*):?(.*)")
+                print(command)
                 if command == "StartOfSync" then
-                    local numPlayers = tonumber(arguments)
-                    ReceiveSyncFrame.bar:SetValue(0)
-                    ReceiveSyncFrame.bar:SetMinMaxValues(0, numPlayers)
+                    print("Received addon message from " .. sender .. ": " .. payload)
+                    NumPlayersInSync = tonumber(arguments)
+                    ReceiveSyncFrame.Bar:SetValue(0)
+                    ReceiveSyncFrame.Bar:SetMinMaxValues(0, NumPlayersInSync)
                     ReceiveSyncFrame:Show()
-                elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide() TBCEPGP:MergeNewPlayerInfo(newPlayers)
+                    ReceiveSyncFrame.Bar.SyncProgress:SetText(string.format("%s/%s", 0, NumPlayersInSync))
+                    NewPlayers = {}
+                    print('New Sync Started')
+                elseif payload == "EndOfSync" then print("Sync Received from", sender) TBCEPGP:MergeNewPlayerInfo(NewPlayers)
+                -- elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide() TBCEPGP:MergeNewPlayerInfo(newPlayers)
                 else
-                    local curValue = ReceiveSyncFrame.bar:GetValue()
-                    ReceiveSyncFrame.bar:SetValue(curValue + 1)
+                    local curValue = ReceiveSyncFrame.Bar:GetValue()
+                    ReceiveSyncFrame.Bar:SetValue(curValue + 1)
+                    ReceiveSyncFrame.Bar.SyncProgress:SetText(string.format("%d/%d", curValue + 1, NumPlayersInSync))
                     for i = 1, 6 do
                         if subPayload ~= nil then
                             subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
@@ -1093,12 +1126,12 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                     end
 
                     local curGUID = subStringList[1]
-                    newPlayers[curGUID] = {}
-                    newPlayers[curGUID].Name = subStringList[2]
-                    newPlayers[curGUID].Update = subStringList[3]
-                    newPlayers[curGUID].Class = subStringList[4]
-                    newPlayers[curGUID].EP = subStringList[5]
-                    newPlayers[curGUID].GP = subStringList[6]
+                    NewPlayers[curGUID] = {}
+                    NewPlayers[curGUID].Name = subStringList[2]
+                    NewPlayers[curGUID].Update = subStringList[3]
+                    NewPlayers[curGUID].Class = subStringList[4]
+                    NewPlayers[curGUID].EP = subStringList[5]
+                    NewPlayers[curGUID].GP = subStringList[6]
                 end
             end
         end
@@ -1126,7 +1159,14 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
 end
 
 function TBCEPGP:MergeNewPlayerInfo(newPlayers)
+    print("Merging new player info")
     local players = TBCEPGPDataTable.Players
+
+    for _, value in pairs(newPlayers) do
+        if value.EP == nil then value.EP = 0 end
+        if value.GP == nil then value.GP = 0 end
+    end
+
     for curGUID, player in pairs(newPlayers) do
         if players[curGUID] == nil or players[curGUID].Update < player.Update then
             players[curGUID] = {}
@@ -1136,13 +1176,10 @@ function TBCEPGP:MergeNewPlayerInfo(newPlayers)
             players[curGUID].EP = player.EP
             players[curGUID].GP = player.GP
             TBCEPGP:CalculatePriority(curGUID, player.EP, player.GP)
+            print("Updated " .. player.Name .. " with new info")
         end
     end
-
-    for _, value in pairs(newPlayers) do
-        if value.EP == nil then value.EP = 0 end
-        if value.GP == nil then value.GP = 0 end
-    end
+    
     TBCEPGP:FillAdminFrameScrollPanel(players)
     TBCEPGP:FillUserFrameScrollPanel(players)
 end
