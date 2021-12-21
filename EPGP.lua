@@ -247,11 +247,7 @@ function TBCEPGP:OnLoad()
 
     ReceiveSyncFrame.header = ReceiveSyncFrame:CreateFontString("ReceiveSyncFrame", "ARTWORK", "GameFontNormalHuge")
     ReceiveSyncFrame.header:SetPoint("TOP", 0, -10)
-    ReceiveSyncFrame.header:SetText("|cFFFF0000" .. AddOnName .. " out of date!|r")
-
-    ReceiveSyncFrame.text = ReceiveSyncFrame:CreateFontString("ReceiveSyncFrame", "ARTWORK", "GameFontNormal")
-    ReceiveSyncFrame.text:SetPoint("TOP", 0, -30)
-    ReceiveSyncFrame.text:SetText("-----")
+    ReceiveSyncFrame.header:SetText("|cFFFF0000" .. AddOnName .. " receiving sync from XXX!|r")
 
     ReceiveSyncFrame.bar = CreateFrame("StatusBar", nil, ReceiveSyncFrame)
     ReceiveSyncFrame.bar:SetSize(ReceiveSyncFrame:GetWidth() - 20, 18)
@@ -276,6 +272,13 @@ function TBCEPGP:OnLoad()
     -- ReceiveSyncFrame.bar.cooldown:SetPoint("RIGHT", -5, 0)
     -- ReceiveSyncFrame.bar.cooldown:SetText("")
     ReceiveSyncFrame.bar:SetStatusBarColor(0, 0.75, 1)
+
+    ReceiveSyncFrame.CloseButton = CreateFrame("Button", nil, ReceiveSyncFrame, "UIPanelCloseButton")
+    ReceiveSyncFrame.CloseButton:SetSize(24, 24)
+    ReceiveSyncFrame.CloseButton:SetPoint("TOPRIGHT", ReceiveSyncFrame, "TOPRIGHT", -3, -3)
+    ReceiveSyncFrame.CloseButton:SetScript("OnClick", function() ReceiveSyncFrame:Hide() end)
+
+    ReceiveSyncFrame:Hide()
 
     TBCEPGP:AddTooltipScript()
     TBCEPGP:CreateLootFrame()
