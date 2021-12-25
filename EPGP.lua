@@ -281,7 +281,7 @@ function TBCEPGP:OnLoad()
     ReceiveSyncFrame.CloseButton:SetPoint("TOPRIGHT", ReceiveSyncFrame, "TOPRIGHT", -3, -3)
     ReceiveSyncFrame.CloseButton:SetScript("OnClick", function() ReceiveSyncFrame:Hide() end)
 
-    --ReceiveSyncFrame:Hide()
+    ReceiveSyncFrame:Hide()
 
     TBCEPGP:AddTooltipScript()
     TBCEPGP:CreateLootFrame()
@@ -844,20 +844,13 @@ end
 function TBCEPGP:RollItem(inputLink)
     if inputLink == nil then print("No ItemLink provided!")
     else
-        --local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(inputLink)
         local itemStuff = TBCEPGP:CheckItemInfo(inputLink)
-        --if itemEquipLoc == nil or itemEquipLoc == "" then itemEquipLoc = "Not Equipable!" end
         if itemStuff.itemEquipLoc == nil or itemStuff.itemEquipLoc == "" then itemStuff.itemEquipLoc = "Not Equipable!" end
-        --local totalPrice = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
         local totalPrice = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
         local roundedPrice = TBCEPGP:MathRound(totalPrice)
-        --print("EPGP Rolling Item:", itemLink)
         print("EPGP Rolling Item:", itemStuff.itemLink)
-        --print("iLevel:", itemLevel, " - Quality:", itemQuality, " - Slot:", itemEquipLoc)
         print("iLevel:", itemStuff.itemLevel, " - Quality:", itemStuff.itemQuality, " - Slot:", itemStuff.itemEquipLoc)
-        --print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemQuality, itemLevel))
         print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemStuff.itemQuality, itemStuff.itemLevel))
-        --print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemEquipLoc))
         print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemStuff.itemEquipLoc))
         print("Total Price:", totalPrice)
         print("Rounded Price:", roundedPrice)
@@ -900,23 +893,6 @@ function TBCEPGP:CountPlayersInList()
     return numPlayers
 end
 
--- function TBCEPGP:SyncRaidersAddOnMsg()
---     print("Trying to sync!")
---     local players = TBCEPGPDataTable.Players
---     local Amount = 0
---     for _, _ in pairs(players) do Amount = Amount + 1 end
---     TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", Amount))
---     for playerGUID, playerData in pairs(players) do
---         local message = "Player:"
---         if playerData.EP == nil then playerData.EP = 1 end
---         if playerData.GP == nil then playerData.GP = 1 end
---         message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
---         TBCEPGP:SendRaidGuildAddonMsg(message)
---     end
---     TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
---     print("Sync AddOn Messages Send!")
--- end
-
 function TBCEPGP:SyncRaidersAddOnMsg()
     print("Trying to sync!")
     local players = TBCEPGPDataTable.Players
@@ -925,24 +901,19 @@ function TBCEPGP:SyncRaidersAddOnMsg()
         if playerData.EP == nil then playerData.EP = 1 end
         if playerData.GP == nil then playerData.GP = 1 end
         message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
-        --TBCEPGP:SendRaidGuildAddonMsg(message)
         table.insert(SyncQueue, message)
     end
     TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", #SyncQueue))
-    -- TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
-    -- print("Sync AddOn Messages Send!")
     if CurrentSyncTicker == nil then
         CurrentSyncTicker = C_Timer.NewTicker(1, function() TBCEPGP:SendNextSyncBatch() end)
     end
 end
 
 function TBCEPGP:SendNextSyncBatch()
-    --for i = 1, 1 do
-        if #SyncQueue > 0 then
-            local message = table.remove(SyncQueue, 1)
-            TBCEPGP:SendRaidGuildAddonMsg(message)
-        end
-    --end
+    if #SyncQueue > 0 then
+        local message = table.remove(SyncQueue, 1)
+        TBCEPGP:SendRaidGuildAddonMsg(message)
+    end
 
     if #SyncQueue == 0 then
         TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
@@ -1095,7 +1066,6 @@ function TBCEPGP:CollectPlayersInRaid()
 end
 
 function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
-    --print("Received addon message from " .. sender .. ": " .. payload)
     local player = UnitName("PLAYER")
     if prefix == "TBCEPGPVersion" and sender ~= player then
         local version = TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
@@ -1121,8 +1091,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                     ReceiveSyncFrame.Bar.SyncProgress:SetText(string.format("%s/%s", 0, NumPlayersInSync))
                     NewPlayers = {}
                     print('New Sync Started')
-                elseif payload == "EndOfSync" then print("Sync Received from", sender) TBCEPGP:MergeNewPlayerInfo(NewPlayers)
-                -- elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide() TBCEPGP:MergeNewPlayerInfo(newPlayers)
+                elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide() TBCEPGP:MergeNewPlayerInfo(NewPlayers)
                 else
                     local curValue = ReceiveSyncFrame.Bar:GetValue()
                     ReceiveSyncFrame.Bar:SetValue(curValue + 1)
@@ -1195,104 +1164,9 @@ function TBCEPGP:MergeNewPlayerInfo(newPlayers)
             print("Updated " .. player.Name .. " with new info")
         end
     end
-    
     TBCEPGP:FillAdminFrameScrollPanel(players)
     TBCEPGP:FillUserFrameScrollPanel(players)
 end
-
--- function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
---     local player = UnitName("PLAYER")
---     if prefix == "TBCEPGPVersion" and sender ~= player then
---         local version = TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
---         if version ~= nil then
---             TBCEPGP:ReceiveVersion(version)
---         end
---     elseif prefix == "TBCEPGP" then
---         local playerName = UnitName("player")
---         local subPayload = payload
---         local players = TBCEPGPDataTable.Players
---         local newPlayers = {}
---         local subStringList = {}
-        
---         sender = string.match(sender, "(.*)-")
---         if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
---             if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
---                 local command, arguments = string.match("([^:]):(.*)")
---                 if command == "StartOfSync" then
---                     local numPlayers = tonumber(arguments)
---                     ReceiveSyncFrame.bar:SetValue(0)
---                     ReceiveSyncFrame.bar:SetMinMaxValues(0, numPlayers)
---                     ReceiveSyncFrame:Show()
---                 elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide()
---                 else
---                     local curValue = ReceiveSyncFrame.bar:GetValue()
---                     ReceiveSyncFrame.bar:SetValue(curValue + 1)
---                     for i = 1, 6 do
---                         if subPayload ~= nil then
---                             subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
---                             local stringFind = string.find(subPayload, ":", 1)
---                             if stringFind ~= nil then
---                                 subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
---                             end
---                         end
---                         subStringList[3] = tonumber(subStringList[3])
---                         subStringList[4] = tonumber(subStringList[4])
---                         subStringList[5] = tonumber(subStringList[5])
---                         subStringList[6] = tonumber(subStringList[6])
---                     end
-
---                     if newPlayers[subStringList[1]] == nil then
---                         local curGUID = subStringList[1]
---                         newPlayers[curGUID] = {}
---                         newPlayers[curGUID].Name = subStringList[2]
---                         newPlayers[curGUID].Update = subStringList[3]
---                         newPlayers[curGUID].Class = subStringList[4]
---                         newPlayers[curGUID].EP = subStringList[5]
---                         newPlayers[curGUID].GP = subStringList[6]
---                         TBCEPGP:CalculatePriority(curGUID, subStringList[5], subStringList[6])
---                     else
---                         local curGUID = subStringList[1]
---                         if newPlayers[curGUID].Update < subStringList[3] then
---                             newPlayers[curGUID].Name = subStringList[2]
---                             newPlayers[curGUID].Update = subStringList[3]
---                             newPlayers[curGUID].Class = subStringList[4]
---                             newPlayers[curGUID].EP = subStringList[5]
---                             newPlayers[curGUID].GP = subStringList[6]
---                             TBCEPGP:CalculatePriority(curGUID, subStringList[5], subStringList[6])
---                         end
---                     end
---                     for _, value in pairs(newPlayers) do
---                         if value.EP == nil then value.EP = 0 end
---                         if value.GP == nil then value.GP = 0 end
---                     end
---                     TBCEPGPDataTable.Players = newPlayers
---                     TBCEPGP:FillAdminFrameScrollPanel(newPlayers)
---                     TBCEPGP:FillUserFrameScrollPanel(newPlayers)
---                 end
---             end
---         end
---     elseif prefix == "TBCEPGPItem" then
---         local subPayload = payload
---         local itemName, itemTexture, GPValue, itemLink = string.match(payload, "Item:([^:]*):([^:]*):([^:]*):(.*):$")
---         TBCEPGP:AddItemToLootList(itemName, itemTexture, GPValue, itemLink)
---     elseif prefix == "TBCEPGPRoll" then
---         local subPayload = payload
---         local subStringList = {}
-
---         for i = 1, 3 do
---             if subPayload ~= nil then
---                 subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
---                 local stringFind = string.find(subPayload, ":", 1)
---                 if stringFind ~= nil then
---                     subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
---                 end
---             end
---         end
---         subStringList[2] = tonumber(subStringList[2])
-
---         TBCEPGP:AddPlayerToItem(subStringList[1], subStringList[2], subStringList[3])
---     end
--- end
 
 function TBCEPGP:OnEvent(_, event, ...)
     for _, handler in pairs(TBCEPGP.RegisteredEvents[event]) do
@@ -1335,7 +1209,6 @@ function TBCEPGP:VarsAndAddonLoaded()
 
     if TBCEPGPVersionNumber ~= nil then TBCEPGPVersionNumber = nil end
     TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version, ErrorInfo = {}}
-    DevTools_Dump(TBCEPGPVersionData)
 
     if TBCEPGPMinimums == nil then TBCEPGPMinimums = {} end
     if TBCEPGPMinimums.EP == nil then TBCEPGPMinimums.EP = 1 end
