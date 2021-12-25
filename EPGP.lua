@@ -18,9 +18,9 @@ local FilterRaid = false
 local DecayConfirmWindow = nil
 local ReceiveSyncFrame = nil
 local NewPlayers = {}
-local currentSyncTicker = nil
-local SyncQueue = {}
 local NumPlayersInSync = 0
+local CurrentSyncTicker = nil
+local SyncQueue = {}
 
 if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
 if EPGPChangeLog == nil then EPGPChangeLog = {} end
@@ -240,7 +240,7 @@ function TBCEPGP:OnLoad()
 
     ReceiveSyncFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     ReceiveSyncFrame:SetPoint("CENTER", 0, 250)
-    ReceiveSyncFrame:SetSize(400, 100)
+    ReceiveSyncFrame:SetSize(300, 80)
     ReceiveSyncFrame:SetBackdrop({
         bgFile = "Interface/Tooltips/UI-Tooltip-Background",
         edgeFile = "Interface/Tooltips/UI-Tooltip-Border",
@@ -249,32 +249,31 @@ function TBCEPGP:OnLoad()
     })
     ReceiveSyncFrame:SetBackdropColor(0.25, 0.25, 0.25, 0.80)
 
-    ReceiveSyncFrame.header = ReceiveSyncFrame:CreateFontString("ReceiveSyncFrame", "ARTWORK", "GameFontNormalHuge")
-    ReceiveSyncFrame.header:SetPoint("TOP", 0, -10)
-    ReceiveSyncFrame.header:SetText("|cFFFF0000" .. AddOnName .. " receiving sync from XXX!|r")
+    ReceiveSyncFrame.Header = ReceiveSyncFrame:CreateFontString("ReceiveSyncFrame", "ARTWORK", "GameFontNormalHuge")
+    ReceiveSyncFrame.Header:SetPoint("TOP", 0, -10)
+    ReceiveSyncFrame.Header:SetText("|cFF00FFFF" .. AddOnName .. " receiving sync.|r")
+    
+    ReceiveSyncFrame.SubHeader = ReceiveSyncFrame:CreateFontString("ReceiveSyncFrame", "ARTWORK", "GameFontNormalLarge")
+    ReceiveSyncFrame.SubHeader:SetPoint("TOP", ReceiveSyncFrame.Header, "BOTTOM", 0, -5)
+    ReceiveSyncFrame.SubHeader:SetText("|cFF00FFFFAdmin: %s|r")
 
     ReceiveSyncFrame.Bar = CreateFrame("StatusBar", nil, ReceiveSyncFrame)
     ReceiveSyncFrame.Bar:SetSize(ReceiveSyncFrame:GetWidth() - 20, 18)
     ReceiveSyncFrame.Bar:SetStatusBarTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
-    ReceiveSyncFrame.Bar:SetPoint("TOP", 0, -30)
+    ReceiveSyncFrame.Bar:SetPoint("TOP", ReceiveSyncFrame.SubHeader, "BOTTOM", 0, -5)
     ReceiveSyncFrame.Bar:SetMinMaxValues(0, 100)
     ReceiveSyncFrame.Bar:SetValue(0)
+
     ReceiveSyncFrame.Bar.SyncProgress = ReceiveSyncFrame.Bar:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     ReceiveSyncFrame.Bar.SyncProgress:SetSize(50, 16)
     ReceiveSyncFrame.Bar.SyncProgress:SetPoint("CENTER", 0, -1)
     ReceiveSyncFrame.Bar.SyncProgress:SetText("0/100")
-    -- ReceiveSyncFrame.bar.CharName = ReceiveSyncFrame.bar:CreateFontString(nil, "ARTWORK", "GameFontNormal")
-    -- ReceiveSyncFrame.bar.CharName:SetSize(50, 16)
-    -- ReceiveSyncFrame.bar.CharName:SetPoint("LEFT", 5, -1)
-    -- ReceiveSyncFrame.bar.CharName:SetText(playerName)
-    ReceiveSyncFrame.Bar.bg = ReceiveSyncFrame.Bar:CreateTexture(nil, "BACKGROUND")
-    ReceiveSyncFrame.Bar.bg:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
-    ReceiveSyncFrame.Bar.bg:SetAllPoints(true)
-    ReceiveSyncFrame.Bar.bg:SetVertexColor(1, 0, 0)
-    -- ReceiveSyncFrame.bar.cooldown = ReceiveSyncFrame.bar:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
-    -- ReceiveSyncFrame.bar.cooldown:SetSize(25, 16)
-    -- ReceiveSyncFrame.bar.cooldown:SetPoint("RIGHT", -5, 0)
-    -- ReceiveSyncFrame.bar.cooldown:SetText("")
+
+    ReceiveSyncFrame.Bar.BG = ReceiveSyncFrame.Bar:CreateTexture(nil, "BACKGROUND")
+    ReceiveSyncFrame.Bar.BG:SetTexture("Interface\\TARGETINGFRAME\\UI-StatusBar")
+    ReceiveSyncFrame.Bar.BG:SetAllPoints(true)
+    ReceiveSyncFrame.Bar.BG:SetVertexColor(1, 0, 0)
+
     ReceiveSyncFrame.Bar:SetStatusBarColor(0, 0.75, 1)
 
     ReceiveSyncFrame.CloseButton = CreateFrame("Button", nil, ReceiveSyncFrame, "UIPanelCloseButton")
@@ -282,7 +281,7 @@ function TBCEPGP:OnLoad()
     ReceiveSyncFrame.CloseButton:SetPoint("TOPRIGHT", ReceiveSyncFrame, "TOPRIGHT", -3, -3)
     ReceiveSyncFrame.CloseButton:SetScript("OnClick", function() ReceiveSyncFrame:Hide() end)
 
-    ReceiveSyncFrame:Hide()
+    --ReceiveSyncFrame:Hide()
 
     TBCEPGP:AddTooltipScript()
     TBCEPGP:CreateLootFrame()
@@ -901,10 +900,26 @@ function TBCEPGP:CountPlayersInList()
     return numPlayers
 end
 
+-- function TBCEPGP:SyncRaidersAddOnMsg()
+--     print("Trying to sync!")
+--     local players = TBCEPGPDataTable.Players
+--     local Amount = 0
+--     for _, _ in pairs(players) do Amount = Amount + 1 end
+--     TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", Amount))
+--     for playerGUID, playerData in pairs(players) do
+--         local message = "Player:"
+--         if playerData.EP == nil then playerData.EP = 1 end
+--         if playerData.GP == nil then playerData.GP = 1 end
+--         message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
+--         TBCEPGP:SendRaidGuildAddonMsg(message)
+--     end
+--     TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
+--     print("Sync AddOn Messages Send!")
+-- end
+
 function TBCEPGP:SyncRaidersAddOnMsg()
     print("Trying to sync!")
     local players = TBCEPGPDataTable.Players
-    
     for playerGUID, playerData in pairs(players) do
         local message = "Player:"
         if playerData.EP == nil then playerData.EP = 1 end
@@ -916,23 +931,23 @@ function TBCEPGP:SyncRaidersAddOnMsg()
     TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", #SyncQueue))
     -- TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
     -- print("Sync AddOn Messages Send!")
-    if currentSyncTicker == nil then
-        currentSyncTicker = C_Timer.NewTicker(0.5, function() TBCEPGP:SendNextSyncBatch() end)
+    if CurrentSyncTicker == nil then
+        CurrentSyncTicker = C_Timer.NewTicker(1, function() TBCEPGP:SendNextSyncBatch() end)
     end
 end
 
 function TBCEPGP:SendNextSyncBatch()
-    for i = 1,5 do
+    --for i = 1, 1 do
         if #SyncQueue > 0 then
             local message = table.remove(SyncQueue, 1)
             TBCEPGP:SendRaidGuildAddonMsg(message)
         end
-    end
+    --end
 
     if #SyncQueue == 0 then
         TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
-        currentSyncTicker:Cancel()
-        currentSyncTicker = nil
+        CurrentSyncTicker:Cancel()
+        CurrentSyncTicker = nil
         print("Sync AddOn Messages Send!")
     end
 end
@@ -1092,18 +1107,16 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         local subPayload = payload
         local players = TBCEPGPDataTable.Players
         local subStringList = {}
-        
+
         sender = string.match(sender, "(.*)-")
         if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
             if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
-                print(payload)
                 local command, arguments = string.match(payload, "([^:]*):?(.*)")
-                print(command)
                 if command == "StartOfSync" then
-                    print("Received addon message from " .. sender .. ": " .. payload)
                     NumPlayersInSync = tonumber(arguments)
                     ReceiveSyncFrame.Bar:SetValue(0)
                     ReceiveSyncFrame.Bar:SetMinMaxValues(0, NumPlayersInSync)
+                    ReceiveSyncFrame.SubHeader:SetText(string.format("|cFF00FFFFAdmin: %s|r", sender))
                     ReceiveSyncFrame:Show()
                     ReceiveSyncFrame.Bar.SyncProgress:SetText(string.format("%s/%s", 0, NumPlayersInSync))
                     NewPlayers = {}
@@ -1115,11 +1128,11 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                     ReceiveSyncFrame.Bar:SetValue(curValue + 1)
                     ReceiveSyncFrame.Bar.SyncProgress:SetText(string.format("%d/%d", curValue + 1, NumPlayersInSync))
                     for i = 1, 6 do
-                        if subPayload ~= nil then
-                            subPayload = string.sub(subPayload, string.find(subPayload, ":") + 1, #subPayload)
-                            local stringFind = string.find(subPayload, ":", 1)
+                        if arguments ~= nil then
+                            arguments = string.sub(subPayload, string.find(arguments, ":") + 1, #arguments)
+                            local stringFind = string.find(arguments, ":", 1)
                             if stringFind ~= nil then
-                                subStringList[i] = string.sub(subPayload, 0, stringFind - 1)
+                                subStringList[i] = string.sub(arguments, 0, stringFind - 1)
                             end
                         end
                         subStringList[3] = tonumber(subStringList[3])
