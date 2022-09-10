@@ -1,7 +1,7 @@
-if TBCEPGP == nil then TBCEPGP = {} end
-TBCEPGP.Events = {}
-TBCEPGP.Version = 41
-local AddOnName = "TBC-EPGP"
+if WOTLKEPGP == nil then WOTLKEPGP = {} end
+WOTLKEPGP.Events = {}
+WOTLKEPGP.Version = 42
+local AddOnName = "Wrath EPGP"
 
 local UpdateFrame, EventFrame, EPGPOptionsPanel = nil, nil, nil
 local EPGPUserFrame, UserScrollPanel = nil, nil
@@ -22,7 +22,7 @@ local NumPlayersInSync = 0
 local CurrentSyncTicker = nil
 local SyncQueue = {}
 
-if TBCEPGPShowAdminView == nil then TBCEPGPShowAdminView = false end
+if WOTLKEPGPShowAdminView == nil then WOTLKEPGPShowAdminView = false end
 if EPGPChangeLog == nil then EPGPChangeLog = {} end
 
 local classInfo =
@@ -51,20 +51,20 @@ local filteredClasses =
     [11] = false,
 }
 
-function TBCEPGP:OnLoad()
-    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGP")
-    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPItem")
-    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPRoll")
-    C_ChatInfo.RegisterAddonMessagePrefix("TBCEPGPVersion")
+function WOTLKEPGP:OnLoad()
+    C_ChatInfo.RegisterAddonMessagePrefix("WOTLKEPGP")
+    C_ChatInfo.RegisterAddonMessagePrefix("WOTLKEPGPItem")
+    C_ChatInfo.RegisterAddonMessagePrefix("WOTLKEPGPRoll")
+    C_ChatInfo.RegisterAddonMessagePrefix("WOTLKEPGPVersion")
 
     EventFrame = CreateFrame("Frame", nil, UIParent)
-    TBCEPGP:RegisterEvents("ADDON_LOADED", function(...) TBCEPGP.Events:AddonLoaded(...) end)
-    TBCEPGP:RegisterEvents("VARIABLES_LOADED", function(...) TBCEPGP.Events:VariablesLoaded(...) end)
-    TBCEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) TBCEPGP.Events:ChatMsgAddon(...) end)
-    TBCEPGP:RegisterEvents("GROUP_ROSTER_UPDATE", function(...) TBCEPGP.Events:GroupRosterUpdate(...) end)
-    TBCEPGP:RegisterEvents("LOOT_OPENED", function(...) TBCEPGP.Events:LootOpened(...) end)
+    WOTLKEPGP:RegisterEvents("ADDON_LOADED", function(...) WOTLKEPGP.Events:AddonLoaded(...) end)
+    WOTLKEPGP:RegisterEvents("VARIABLES_LOADED", function(...) WOTLKEPGP.Events:VariablesLoaded(...) end)
+    WOTLKEPGP:RegisterEvents("CHAT_MSG_ADDON", function(...) WOTLKEPGP.Events:ChatMsgAddon(...) end)
+    WOTLKEPGP:RegisterEvents("GROUP_ROSTER_UPDATE", function(...) WOTLKEPGP.Events:GroupRosterUpdate(...) end)
+    WOTLKEPGP:RegisterEvents("LOOT_OPENED", function(...) WOTLKEPGP.Events:LootOpened(...) end)
 
-    EventFrame:SetScript("OnEvent", function(...) TBCEPGP:OnEvent(...) end)
+    EventFrame:SetScript("OnEvent", function(...) WOTLKEPGP:OnEvent(...) end)
 
     UpdateFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
     UpdateFrame:SetPoint("CENTER", 0, 250)
@@ -94,12 +94,12 @@ function TBCEPGP:OnLoad()
     UpdateFrame:Hide()
 
     EPGPOptionsPanel = CreateFrame("FRAME", nil)
-    EPGPOptionsPanel.name = "TBC-EPGP"
+    EPGPOptionsPanel.name = "Wrath EPGP"
     InterfaceOptions_AddCategory(EPGPOptionsPanel)
 
     EPGPOptionsPanel.header = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalHuge")
     EPGPOptionsPanel.header:SetPoint("TOP", 0, -10)
-    EPGPOptionsPanel.header:SetText("|cFF00FFFFTBC EPGP Options!|r")
+    EPGPOptionsPanel.header:SetText("|cFF00FFFFWotLK EPGP Options!|r")
 
     EPGPOptionsPanel.subheader = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
     EPGPOptionsPanel.subheader:SetPoint("TOP", 0, -35)
@@ -114,20 +114,20 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.adminsEditBox:SetSize(200, 25)
     EPGPOptionsPanel.adminsEditBox:SetPoint("TOP", EPGPOptionsPanel.adminsEditBoxText, "BOTTOM", 0, -5)
     EPGPOptionsPanel.adminsEditBox:SetAutoFocus(false)
-    EPGPOptionsPanel.adminsEditBox:SetScript("OnEditFocusLost", function() TBCEPGPAdminList = TBCEPGP:splitCharacterNames(EPGPOptionsPanel.adminsEditBox:GetText()) end)
+    EPGPOptionsPanel.adminsEditBox:SetScript("OnEditFocusLost", function() WOTLKEPGPAdminList = WOTLKEPGP:splitCharacterNames(EPGPOptionsPanel.adminsEditBox:GetText()) end)
 
     EPGPOptionsPanel.showAdminViewCheckButton = CreateFrame("CheckButton", "ShowAdminViewCheckButton", EPGPOptionsPanel, "ChatConfigCheckButtonTemplate");
     EPGPOptionsPanel.showAdminViewCheckButton:SetPoint("TOP", EPGPOptionsPanel.adminsEditBox, "BOTTOMLEFT", 0, -20);
     EPGPOptionsPanel.showAdminViewCheckButton:SetScript("OnClick", function()
-        TBCEPGPShowAdminView = EPGPOptionsPanel.showAdminViewCheckButton:GetChecked()
-        if TBCEPGPShowAdminView == true then
+        WOTLKEPGPShowAdminView = EPGPOptionsPanel.showAdminViewCheckButton:GetChecked()
+        if WOTLKEPGPShowAdminView == true then
             EPGPUserFrame:Hide()
             EPGPAdminFrame:Show()
-        elseif TBCEPGPShowAdminView == false then
+        elseif WOTLKEPGPShowAdminView == false then
             EPGPAdminFrame:Hide()
             EPGPUserFrame:Show()
         end
-        TBCEPGP:FilterPlayers()
+        WOTLKEPGP:FilterPlayers()
     end)
     ShowAdminViewCheckButtonText:SetText("Show Admin View")
 
@@ -154,8 +154,8 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.EPOffSet:SetAutoFocus(false)
     EPGPOptionsPanel.EPOffSet:SetScript("OnEditFocusLost",
     function()
-        TBCEPGP:ChangePRCalculations()
-        TBCEPGP:SavePRCalculations()
+        WOTLKEPGP:ChangePRCalculations()
+        WOTLKEPGP:SavePRCalculations()
     end)
 
     EPGPOptionsPanel.GPOffSetText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -170,11 +170,11 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.GPOffSet:SetAutoFocus(false)
     EPGPOptionsPanel.GPOffSet:SetScript("OnEditFocusLost",
     function()
-        TBCEPGP:ChangePRCalculations()
-        TBCEPGP:SavePRCalculations()
+        WOTLKEPGP:ChangePRCalculations()
+        WOTLKEPGP:SavePRCalculations()
     end)
 
-    TBCEPGP:ChangePRCalculations()
+    WOTLKEPGP:ChangePRCalculations()
 
     EPGPOptionsPanel.EPMinimumText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
     EPGPOptionsPanel.EPMinimumText:SetSize(90, 25)
@@ -188,7 +188,7 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.EPMinimum:SetAutoFocus(false)
     EPGPOptionsPanel.EPMinimum:SetScript("OnEditFocusLost",
     function()
-        TBCEPGPMinimums.EP = EPGPOptionsPanel.EPMinimum:GetText()
+        WOTLKEPGPMinimums.EP = EPGPOptionsPanel.EPMinimum:GetText()
     end)
 
     EPGPOptionsPanel.GPMinimumText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -203,7 +203,7 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.GPMinimum:SetAutoFocus(false)
     EPGPOptionsPanel.GPMinimum:SetScript("OnEditFocusLost",
     function()
-        TBCEPGPMinimums.GP = EPGPOptionsPanel.GPMinimum:GetText()
+        WOTLKEPGPMinimums.GP = EPGPOptionsPanel.GPMinimum:GetText()
     end)
 
     EPGPOptionsPanel.EPDecayText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -218,8 +218,8 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.EPDecay:SetAutoFocus(false)
     EPGPOptionsPanel.EPDecay:SetScript("OnEditFocusLost",
     function()
-        TBCEPGPDecay.EP = EPGPOptionsPanel.EPDecay:GetText()
-        DecayConfirmWindow.WarningText2:SetText(string.format("|cFFFF0000EP Decay: %d%%\nGP Decay: %d%%|r", TBCEPGPDecay.EP, TBCEPGPDecay.GP))
+        WOTLKEPGPDecay.EP = EPGPOptionsPanel.EPDecay:GetText()
+        DecayConfirmWindow.WarningText2:SetText(string.format("|cFFFF0000EP Decay: %d%%\nGP Decay: %d%%|r", WOTLKEPGPDecay.EP, WOTLKEPGPDecay.GP))
     end)
 
     EPGPOptionsPanel.GPDecayText = EPGPOptionsPanel:CreateFontString(nil, "ARTWORK", "GameFontNormal")
@@ -234,8 +234,8 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel.GPDecay:SetAutoFocus(false)
     EPGPOptionsPanel.GPDecay:SetScript("OnEditFocusLost",
     function()
-        TBCEPGPDecay.GP = EPGPOptionsPanel.GPDecay:GetText()
-        DecayConfirmWindow.WarningText2:SetText(string.format("|cFFFF0000EP Decay: %d%%\nGP Decay: %d%%|r", TBCEPGPDecay.EP, TBCEPGPDecay.GP))
+        WOTLKEPGPDecay.GP = EPGPOptionsPanel.GPDecay:GetText()
+        DecayConfirmWindow.WarningText2:SetText(string.format("|cFFFF0000EP Decay: %d%%\nGP Decay: %d%%|r", WOTLKEPGPDecay.EP, WOTLKEPGPDecay.GP))
     end)
 
     ReceiveSyncFrame = CreateFrame("Frame", nil, UIParent, "BackdropTemplate")
@@ -283,17 +283,17 @@ function TBCEPGP:OnLoad()
 
     ReceiveSyncFrame:Hide()
 
-    TBCEPGP:AddTooltipScript()
-    TBCEPGP:CreateLootFrame()
-    TBCEPGP:CreateLogFrame()
+    WOTLKEPGP:AddTooltipScript()
+    WOTLKEPGP:CreateLootFrame()
+    WOTLKEPGP:CreateLogFrame()
 
     EPGPOptionsPanel:SetScript("OnShow",
     function()
-        TBCEPGP:ChangePRCalculations()
+        WOTLKEPGP:ChangePRCalculations()
         local adminsToSet = ""
-        if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
-            for i = 1, #TBCEPGPAdminList do
-                adminsToSet = TBCEPGPAdminList[i] .. " "
+        if WOTLKEPGPAdminList ~= nil and #WOTLKEPGPAdminList > 0 then
+            for i = 1, #WOTLKEPGPAdminList do
+                adminsToSet = WOTLKEPGPAdminList[i] .. " "
             end
             EPGPOptionsPanel.adminsEditBox:SetText(adminsToSet)
         end
@@ -301,7 +301,7 @@ function TBCEPGP:OnLoad()
     EPGPOptionsPanel:Hide()
 end
 
-function TBCEPGP:ChangePRCalculations()
+function WOTLKEPGP:ChangePRCalculations()
     local EPOffSet = EPGPOptionsPanel.EPOffSet:GetNumber()
     local GPOffSet = EPGPOptionsPanel.GPOffSet:GetNumber()
     if EPOffSet > 0 then EPOffSet = string.format("+%d", EPOffSet) elseif EPOffSet == 0 then EPOffSet = "" end
@@ -310,13 +310,13 @@ function TBCEPGP:ChangePRCalculations()
     EPGPOptionsPanel.CalculationsLabel:SetText(CalcString)
 end
 
-function TBCEPGP:SavePRCalculations()
+function WOTLKEPGP:SavePRCalculations()
     local EPOffSet = EPGPOptionsPanel.EPOffSet:GetNumber()
     local GPOffSet = EPGPOptionsPanel.GPOffSet:GetNumber()
-    TBCEPGPPRCalc = {tostring(EPOffSet), tostring(GPOffSet)}
+    WOTLKEPGPPRCalc = {tostring(EPOffSet), tostring(GPOffSet)}
 end
 
-function TBCEPGP:CreateLogFrame()
+function WOTLKEPGP:CreateLogFrame()
     EPGPChangeLogFrame = CreateFrame("Frame", nil, UIParent)
     EPGPChangeLogFrame:SetPoint("CENTER", 0, 0)
     EPGPChangeLogFrame:SetSize(670, 400)
@@ -370,7 +370,7 @@ function TBCEPGP:CreateLogFrame()
 
     EPGPChangeLogFrame.Title.Text = EPGPChangeLogFrame.Title:CreateFontString("EPGPChangeLogFrame", "ARTWORK", "GameFontNormalLarge")
     EPGPChangeLogFrame.Title.Text:SetPoint("TOP", 0, -EPGPChangeLogFrame.Title:GetHeight() * 0.25 + 3)
-    EPGPChangeLogFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+    EPGPChangeLogFrame.Title.Text:SetText(AddOnName .. " - v" .. WOTLKEPGP.Version)
 
     EPGPChangeLogFrame.Title.Texture = EPGPChangeLogFrame.Title:CreateTexture(nil, "BACKGROUND")
     EPGPChangeLogFrame.Title.Texture:SetAllPoints()
@@ -512,7 +512,7 @@ function TBCEPGP:CreateLogFrame()
     EPGPChangeLogFrame:Hide()
 end
 
-function TBCEPGP:CreateLootFrame()
+function WOTLKEPGP:CreateLootFrame()
     EPGPLootFrame = CreateFrame("Frame", nil, UIParent)
     EPGPLootFrame:SetPoint("CENTER", 0, 0)
     EPGPLootFrame:SetSize(670, 400)
@@ -566,7 +566,7 @@ function TBCEPGP:CreateLootFrame()
 
     EPGPLootFrame.Title.Text = EPGPLootFrame.Title:CreateFontString("EPGPLootFrame", "ARTWORK", "GameFontNormalLarge")
     EPGPLootFrame.Title.Text:SetPoint("TOP", 0, -EPGPLootFrame.Title:GetHeight() * 0.25 + 3)
-    EPGPLootFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+    EPGPLootFrame.Title.Text:SetText(AddOnName .. " - v" .. WOTLKEPGP.Version)
 
     EPGPLootFrame.Title.Texture = EPGPLootFrame.Title:CreateTexture(nil, "BACKGROUND")
     EPGPLootFrame.Title.Texture:SetAllPoints()
@@ -707,30 +707,30 @@ function TBCEPGP:CreateLootFrame()
     EPGPLootFrame:Hide()
 end
 
-function TBCEPGP:AddTooltipScript()
+function WOTLKEPGP:AddTooltipScript()
     GameTooltip:HookScript("OnTooltipSetItem", function(...)
         local _, itemLink = GameTooltip:GetItem()
         if itemLink ~= nil then
             --local itemName, _, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc = GetItemInfo(itemLink)
-            local itemStuff = TBCEPGP:CheckItemInfo(itemLink)
+            local itemStuff = WOTLKEPGP:CheckItemInfo(itemLink)
 
-            --if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
-            if itemStuff.itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemStuff.itemEquipLoc] ~= nil then
-                --local price = TBCEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
-                local price = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
-                price = TBCEPGP:MathRound(price * 1000) / 1000
-                GameTooltip:AddLine("TBC-EPGP: " .. price .. "GP")
+            --if itemEquipLoc ~= nil and WOTLKEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
+            if itemStuff.itemEquipLoc ~= nil and WOTLKEPGP.InfoTable.Slot[itemStuff.itemEquipLoc] ~= nil then
+                --local price = WOTLKEPGP:CalculateTotalPrice(itemQuality, itemEquipLoc, itemLevel)
+                local price = WOTLKEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
+                price = WOTLKEPGP:MathRound(price * 1000) / 1000
+                GameTooltip:AddLine("Wrath EPGP: " .. price .. "GP")
             end
         end
     end)
 end
 
-function TBCEPGP:CheckItemInfo(itemInfoStuff)
+function WOTLKEPGP:CheckItemInfo(itemInfoStuff)
     local itemName, itemLink, itemQuality, itemLevel, itemMinLevel, itemType, itemSubType, itemStackCount, itemEquipLoc, itemTexture, sellPrice, classID, subclassID, bindType, expacID, setID, isCraftingReagent = GetItemInfo(itemInfoStuff)
 
     local itemID = tonumber(string.match(itemLink, "[^:]*:([^:]*)"))
 
-    local value = TBCEPGP.InfoTable.PreCalculatedItems[itemID]
+    local value = WOTLKEPGP.InfoTable.PreCalculatedItems[itemID]
     if value ~= nil then
         itemLevel = value.itemLevel
         itemQuality = value.itemQuality
@@ -742,7 +742,7 @@ function TBCEPGP:CheckItemInfo(itemInfoStuff)
     return itemStuff
 end
 
-function TBCEPGP:splitCharacterNames(input)
+function WOTLKEPGP:splitCharacterNames(input)
     local names = {}
     local inputLen = #input
     local index = 1
@@ -755,17 +755,17 @@ function TBCEPGP:splitCharacterNames(input)
     return names
 end
 
-function TBCEPGP:RegisterEvents(event, func)
-    local handlers = TBCEPGP.RegisteredEvents[event]
+function WOTLKEPGP:RegisterEvents(event, func)
+    local handlers = WOTLKEPGP.RegisteredEvents[event]
     if handlers == nil then
         handlers = {}
-        TBCEPGP.RegisteredEvents[event] = handlers
+        WOTLKEPGP.RegisteredEvents[event] = handlers
         EventFrame:RegisterEvent(event)
     end
     handlers[#handlers + 1] = func
 end
 
-function TBCEPGP:GetDateTime()
+function WOTLKEPGP:GetDateTime()
     local DateTimeString = date()
     local year, month, date, day, time = nil, nil, nil, nil, nil
     if string.find(DateTimeString, "  ") then
@@ -773,14 +773,14 @@ function TBCEPGP:GetDateTime()
     else
         day, month, date, time, year = strsplit(" ", DateTimeString)
     end
-    day = TBCEPGP:GetFullDayName(day)
-    month = TBCEPGP:GetNumericMonth(month)
+    day = WOTLKEPGP:GetFullDayName(day)
+    month = WOTLKEPGP:GetNumericMonth(month)
     date = tonumber(date)
     year = tonumber(year)
     return year, month, date
 end
 
-function TBCEPGP:GetFullDayName(day)
+function WOTLKEPGP:GetFullDayName(day)
     local dayF
     if day == "Mon" or day == "mon" then dayF =    "Monday" end
     if day == "Tue" or day == "tue" then dayF =   "Tuesday" end
@@ -792,7 +792,7 @@ function TBCEPGP:GetFullDayName(day)
     return dayF
 end
 
-function TBCEPGP:GetNumericMonth(month)
+function WOTLKEPGP:GetNumericMonth(month)
     local monthN
     if month == "Jan" or month == "jan" then monthN = "01" end
     if month == "Feb" or month == "feb" then monthN = "02" end
@@ -809,72 +809,72 @@ function TBCEPGP:GetNumericMonth(month)
     return monthN
 end
 
-function TBCEPGP:GetQualityMultiplier(quality, iLevel)
+function WOTLKEPGP:GetQualityMultiplier(quality, iLevel)
     if quality ~= 0 and quality ~= 1 then
-        local multiplier = TBCEPGP.InfoTable.Quality[quality](iLevel)
+        local multiplier = WOTLKEPGP.InfoTable.Quality[quality](iLevel)
         return multiplier
     else
         return 1
     end
 end
 
-function TBCEPGP:GetSlotMultiplier(slot)    
-    if TBCEPGP.InfoTable.Slot[slot] ~= nil then
-        local multiplier = TBCEPGP.InfoTable.Slot[slot]
+function WOTLKEPGP:GetSlotMultiplier(slot)    
+    if WOTLKEPGP.InfoTable.Slot[slot] ~= nil then
+        local multiplier = WOTLKEPGP.InfoTable.Slot[slot]
         return multiplier
     else
         return 1
     end
 end
 
-function TBCEPGP:CalculateTotalPrice(quality, slot, iLevel)
+function WOTLKEPGP:CalculateTotalPrice(quality, slot, iLevel)
     local TotalPrice, CalcPrice, QMulty, SMulty = nil, nil, nil, nil
-    QMulty = TBCEPGP:GetQualityMultiplier(quality, iLevel)
-    SMulty = TBCEPGP:GetSlotMultiplier(slot)
+    QMulty = WOTLKEPGP:GetQualityMultiplier(quality, iLevel)
+    SMulty = WOTLKEPGP:GetSlotMultiplier(slot)
 
     CalcPrice = QMulty * QMulty * 0.04 * SMulty
     return CalcPrice
 end
 
-function TBCEPGP:MathRound(value)
+function WOTLKEPGP:MathRound(value)
     value = math.floor(value + 0.5)
     return value
 end
 
-function TBCEPGP:RollItem(inputLink)
+function WOTLKEPGP:RollItem(inputLink)
     if inputLink == nil then print("No ItemLink provided!")
     else
-        local itemStuff = TBCEPGP:CheckItemInfo(inputLink)
+        local itemStuff = WOTLKEPGP:CheckItemInfo(inputLink)
         if itemStuff.itemEquipLoc == nil or itemStuff.itemEquipLoc == "" then itemStuff.itemEquipLoc = "Not Equipable!" end
-        local totalPrice = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
-        local roundedPrice = TBCEPGP:MathRound(totalPrice)
+        local totalPrice = WOTLKEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
+        local roundedPrice = WOTLKEPGP:MathRound(totalPrice)
         print("EPGP Rolling Item:", itemStuff.itemLink)
         print("iLevel:", itemStuff.itemLevel, " - Quality:", itemStuff.itemQuality, " - Slot:", itemStuff.itemEquipLoc)
-        print("Quality/iLevel Modifier:", TBCEPGP:GetQualityMultiplier(itemStuff.itemQuality, itemStuff.itemLevel))
-        print("Slot Modifier:", TBCEPGP:GetSlotMultiplier(itemStuff.itemEquipLoc))
+        print("Quality/iLevel Modifier:", WOTLKEPGP:GetQualityMultiplier(itemStuff.itemQuality, itemStuff.itemLevel))
+        print("Slot Modifier:", WOTLKEPGP:GetSlotMultiplier(itemStuff.itemEquipLoc))
         print("Total Price:", totalPrice)
         print("Rounded Price:", roundedPrice)
     end
 end
 
-function TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
+function WOTLKEPGP:AddPlayerToList(curGUID, curName, curClass)
     if curGUID:find("Player-") ~= nil then
-        local numPlayers = TBCEPGP:CountPlayersInList()
+        local numPlayers = WOTLKEPGP:CountPlayersInList()
         local epoch = time()
-        local players = TBCEPGP.DataTable.Players
+        local players = WOTLKEPGP.DataTable.Players
         if players[curGUID] == nil then
             players[curGUID] = {}
             players[curGUID].Name = curName
             players[curGUID].Update = epoch
             players[curGUID].Class = curClass
-            players[curGUID].EP = TBCEPGPMinimums.EP
-            players[curGUID].GP = TBCEPGPMinimums.GP
+            players[curGUID].EP = WOTLKEPGPMinimums.EP
+            players[curGUID].GP = WOTLKEPGPMinimums.GP
             players[curGUID].PR = players[curGUID].EP / players[curGUID].GP
-            local year, month, date = TBCEPGP:GetDateTime()
+            local year, month, date = WOTLKEPGP:GetDateTime()
             local dateString = year .. month .. date
             print("Adding Target to DataTable:", curName, "-", curGUID)
             players[curGUID][dateString] = {}
-            TBCEPGP:FilterPlayers()
+            WOTLKEPGP:FilterPlayers()
         else
             print("Player already in list!")
         end
@@ -883,9 +883,9 @@ function TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
     end
 end
 
-function TBCEPGP:CountPlayersInList()
+function WOTLKEPGP:CountPlayersInList()
     local numPlayers = 0
-    local players = TBCEPGP.DataTable.Players
+    local players = WOTLKEPGP.DataTable.Players
     for key, value in pairs(players) do
         numPlayers = numPlayers + 1
     end
@@ -893,9 +893,9 @@ function TBCEPGP:CountPlayersInList()
     return numPlayers
 end
 
-function TBCEPGP:SyncRaidersAddOnMsg()
+function WOTLKEPGP:SyncRaidersAddOnMsg()
     print("Trying to sync!")
-    local players = TBCEPGPDataTable.Players
+    local players = WOTLKEPGPDataTable.Players
     for playerGUID, playerData in pairs(players) do
         local message = "Player:"
         if playerData.EP == nil then playerData.EP = 1 end
@@ -903,35 +903,35 @@ function TBCEPGP:SyncRaidersAddOnMsg()
         message = message .. playerGUID .. ":" .. playerData.Name .. ":" .. playerData.Update .. ":" .. playerData.Class .. ":" .. playerData.EP .. ":" .. playerData.GP .. ":"
         table.insert(SyncQueue, message)
     end
-    TBCEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", #SyncQueue))
+    WOTLKEPGP:SendRaidGuildAddonMsg(string.format("StartOfSync:%d", #SyncQueue))
     if CurrentSyncTicker == nil then
-        CurrentSyncTicker = C_Timer.NewTicker(1, function() TBCEPGP:SendNextSyncBatch() end)
+        CurrentSyncTicker = C_Timer.NewTicker(1, function() WOTLKEPGP:SendNextSyncBatch() end)
     end
 end
 
-function TBCEPGP:SendNextSyncBatch()
+function WOTLKEPGP:SendNextSyncBatch()
     if #SyncQueue > 0 then
         local message = table.remove(SyncQueue, 1)
-        TBCEPGP:SendRaidGuildAddonMsg(message)
+        WOTLKEPGP:SendRaidGuildAddonMsg(message)
     end
 
     if #SyncQueue == 0 then
-        TBCEPGP:SendRaidGuildAddonMsg("EndOfSync")
+        WOTLKEPGP:SendRaidGuildAddonMsg("EndOfSync")
         CurrentSyncTicker:Cancel()
         CurrentSyncTicker = nil
         print("Sync AddOn Messages Send!")
     end
 end
 
-function TBCEPGP:SendRaidGuildAddonMsg(message)
+function WOTLKEPGP:SendRaidGuildAddonMsg(message)
     if IsInRaid() then
-        C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"RAID", 1)
+        C_ChatInfo.SendAddonMessage("WOTLKEPGP", message ,"RAID", 1)
     else
-        C_ChatInfo.SendAddonMessage("TBCEPGP", message ,"GUILD", 1)
+        C_ChatInfo.SendAddonMessage("WOTLKEPGP", message ,"GUILD", 1)
     end
 end
 
-function TBCEPGP:CreateFilterButtons()
+function WOTLKEPGP:CreateFilterButtons()
     EPGPAdminFrame:HookScript("OnShow", function()
         FilterButtonFrame:SetParent(EPGPAdminFrame.FilterClassesButton)
         FilterButtonFrame:SetPoint("BOTTOM", EPGPAdminFrame.FilterClassesButton, "TOP")
@@ -959,7 +959,7 @@ function TBCEPGP:CreateFilterButtons()
     FilterButtonFrame.FilterRaidGroup:SetScript("OnClick",
     function()
         FilterRaid = not FilterRaid
-        TBCEPGP:FilterPlayers()
+        WOTLKEPGP:FilterPlayers()
     end)
     FilterButtonFrame.FilterRaidGroup.text = FilterButtonFrame.FilterRaidGroup:CreateFontString("FilterClassesButton", "ARTWORK", "GameFontNormalTiny")
     FilterButtonFrame.FilterRaidGroup.text:SetPoint("CENTER", 0, 0)
@@ -1044,17 +1044,17 @@ function TBCEPGP:CreateFilterButtons()
                     filteredClasses[i] = true
                     FilterButtons[i].Texture:SetDesaturated(false)
                 end
-                TBCEPGP:FilterPlayers(i)
+                WOTLKEPGP:FilterPlayers(i)
             end)
         end
     end
 end
 
-function TBCEPGP.Events:GroupRosterUpdate()
-    TBCEPGP:ShareVersion()
+function WOTLKEPGP.Events:GroupRosterUpdate()
+    WOTLKEPGP:ShareVersion()
 end
 
-function TBCEPGP:CollectPlayersInRaid()
+function WOTLKEPGP:CollectPlayersInRaid()
     local playerNames = {}
     for i=1,40 do
         local name = UnitGUID("raid" .. i)
@@ -1065,22 +1065,22 @@ function TBCEPGP:CollectPlayersInRaid()
     return playerNames
 end
 
-function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
+function WOTLKEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
     local player = UnitName("PLAYER")
-    if prefix == "TBCEPGPVersion" and sender ~= player then
-        local version = TBCEPGP:GetSpecificAddonVersion(payload, "TBCEPGP")
+    if prefix == "WOTLKEPGPVersion" and sender ~= player then
+        local version = WOTLKEPGP:GetSpecificAddonVersion(payload, "WOTLKEPGP")
         if version ~= nil then
-            TBCEPGP:ReceiveVersion(version)
+            WOTLKEPGP:ReceiveVersion(version)
         end
-    elseif prefix == "TBCEPGP" then
+    elseif prefix == "WOTLKEPGP" then
         local playerName = UnitName("player")
         local subPayload = payload
-        local players = TBCEPGPDataTable.Players
+        local players = WOTLKEPGPDataTable.Players
         local subStringList = {}
 
         sender = string.match(sender, "(.*)-")
-        if TBCEPGPAdminList ~= nil and #TBCEPGPAdminList > 0 then
-            if sender ~= playerName and tContains(TBCEPGPAdminList, sender) then
+        if WOTLKEPGPAdminList ~= nil and #WOTLKEPGPAdminList > 0 then
+            if sender ~= playerName and tContains(WOTLKEPGPAdminList, sender) then
                 local command, arguments = string.match(payload, "([^:]*):?(.*)")
                 if command == "StartOfSync" then
                     NumPlayersInSync = tonumber(arguments)
@@ -1091,7 +1091,7 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                     ReceiveSyncFrame.Bar.SyncProgress:SetText(string.format("%s/%s", 0, NumPlayersInSync))
                     NewPlayers = {}
                     print('New Sync Started')
-                elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide() TBCEPGP:MergeNewPlayerInfo(NewPlayers)
+                elseif payload == "EndOfSync" then print("Sync Received from", sender) ReceiveSyncFrame:Hide() WOTLKEPGP:MergeNewPlayerInfo(NewPlayers)
                 else
                     local curValue = ReceiveSyncFrame.Bar:GetValue()
                     ReceiveSyncFrame.Bar:SetValue(curValue + 1)
@@ -1120,11 +1120,11 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
                 end
             end
         end
-    elseif prefix == "TBCEPGPItem" then
+    elseif prefix == "WOTLKEPGPItem" then
         local subPayload = payload
         local itemName, itemTexture, GPValue, itemLink = string.match(payload, "Item:([^:]*):([^:]*):([^:]*):(.*):$")
-        TBCEPGP:AddItemToLootList(itemName, itemTexture, GPValue, itemLink)
-    elseif prefix == "TBCEPGPRoll" then
+        WOTLKEPGP:AddItemToLootList(itemName, itemTexture, GPValue, itemLink)
+    elseif prefix == "WOTLKEPGPRoll" then
         local subPayload = payload
         local subStringList = {}
 
@@ -1139,13 +1139,13 @@ function TBCEPGP.Events:ChatMsgAddon(prefix, payload, channel, sender)
         end
         subStringList[2] = tonumber(subStringList[2])
 
-        TBCEPGP:AddPlayerToItem(subStringList[1], subStringList[2], subStringList[3])
+        WOTLKEPGP:AddPlayerToItem(subStringList[1], subStringList[2], subStringList[3])
     end
 end
 
-function TBCEPGP:MergeNewPlayerInfo(newPlayers)
+function WOTLKEPGP:MergeNewPlayerInfo(newPlayers)
     print("Merging new player info")
-    local players = TBCEPGPDataTable.Players
+    local players = WOTLKEPGPDataTable.Players
 
     for _, value in pairs(newPlayers) do
         if value.EP == nil then value.EP = 0 end
@@ -1160,82 +1160,83 @@ function TBCEPGP:MergeNewPlayerInfo(newPlayers)
             players[curGUID].Class = player.Class
             players[curGUID].EP = player.EP
             players[curGUID].GP = player.GP
-            TBCEPGP:CalculatePriority(curGUID, player.EP, player.GP)
+            WOTLKEPGP:CalculatePriority(curGUID, player.EP, player.GP)
             print("Updated " .. player.Name .. " with new info")
         end
     end
-    TBCEPGP:FillAdminFrameScrollPanel(players)
-    TBCEPGP:FillUserFrameScrollPanel(players)
+    WOTLKEPGP:FillAdminFrameScrollPanel(players)
+    WOTLKEPGP:FillUserFrameScrollPanel(players)
 end
 
-function TBCEPGP:OnEvent(_, event, ...)
-    for _, handler in pairs(TBCEPGP.RegisteredEvents[event]) do
+function WOTLKEPGP:OnEvent(_, event, ...)
+    for _, handler in pairs(WOTLKEPGP.RegisteredEvents[event]) do
         handler(...)
     end
 end
 
-function TBCEPGP.Events:AddonLoaded(...)
+function WOTLKEPGP.Events:AddonLoaded(...)
     local addonName = ...
-    if addonName == "TBC-EPGP" then
-        if variablesLoaded == true then TBCEPGP:VarsAndAddonLoaded() else addonLoaded = true end
+    print("AddOn Name:", addonName)
+    if addonName == "WOTLK-EPGP" then
+        if variablesLoaded == true then WOTLKEPGP:VarsAndAddonLoaded() else addonLoaded = true end
     end
 end
 
-function TBCEPGP.Events:VariablesLoaded(...)
-    if addonLoaded == true then TBCEPGP:VarsAndAddonLoaded() else variablesLoaded = true end
+function WOTLKEPGP.Events:VariablesLoaded(...)
+    if addonLoaded == true then WOTLKEPGP:VarsAndAddonLoaded() else variablesLoaded = true end
 end
 
-function TBCEPGP:VarsAndAddonLoaded()
-    if TBCEPGPDataTable == nil then
-        TBCEPGPDataTable = TBCEPGP.DataTable
-    elseif TBCEPGPDataTable ~= nil then
-        TBCEPGP.DataTable = TBCEPGPDataTable
+function WOTLKEPGP:VarsAndAddonLoaded()
+    if WOTLKEPGPDataTable == nil then
+        WOTLKEPGPDataTable = WOTLKEPGP.DataTable
+    elseif WOTLKEPGPDataTable ~= nil then
+        WOTLKEPGP.DataTable = WOTLKEPGPDataTable
     end
 
-    if TBCEPGPPRCalc == nil then TBCEPGPPRCalc = {0, 0} end
-    TBCEPGP:ChangePRCalculations()
-    EPGPOptionsPanel.EPOffSet:SetText(TBCEPGPPRCalc[1])
-    EPGPOptionsPanel.GPOffSet:SetText(TBCEPGPPRCalc[2])
+    if WOTLKEPGPPRCalc == nil then WOTLKEPGPPRCalc = {0, 0} end
+    WOTLKEPGP:ChangePRCalculations()
+    EPGPOptionsPanel.EPOffSet:SetText(WOTLKEPGPPRCalc[1])
+    EPGPOptionsPanel.GPOffSet:SetText(WOTLKEPGPPRCalc[2])
 
-    TBCEPGP:TempDataChanger()
+    WOTLKEPGP:TempDataChanger()
 
-    TBCEPGP.CreateAdminFrame()
-    TBCEPGP.CreateUserFrame()
-    TBCEPGP:CreateFilterButtons()
-    ShowAdminViewCheckButton:SetChecked(TBCEPGPShowAdminView)
-    TBCEPGP:ShareVersion()
+    WOTLKEPGP:CreateAdminFrame()
+    WOTLKEPGP:CreateUserFrame()
+    WOTLKEPGP:CreateFilterButtons()
+    ShowAdminViewCheckButton:SetChecked(WOTLKEPGPShowAdminView)
+    WOTLKEPGP:ShareVersion()
 
-    TBCEPGP:ForceRecalculate()
+    WOTLKEPGP:ForceRecalculate()
 
-    if TBCEPGPVersionNumber ~= nil then TBCEPGPVersionNumber = nil end
-    TBCEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version, ErrorInfo = {}}
+    if WOTLKEPGPVersionNumber ~= nil then WOTLKEPGPVersionNumber = nil end
+    WOTLKEPGPVersionData = {GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = WOTLKEPGP.Version, ErrorInfo = {}}
 
-    if TBCEPGPMinimums == nil then TBCEPGPMinimums = {} end
-    if TBCEPGPMinimums.EP == nil then TBCEPGPMinimums.EP = 1 end
-    if TBCEPGPMinimums.GP == nil then TBCEPGPMinimums.GP = 1 end
+    if WOTLKEPGPMinimums == nil then WOTLKEPGPMinimums = {} end
+    if WOTLKEPGPMinimums.EP == nil then WOTLKEPGPMinimums.EP = 1 end
+    if WOTLKEPGPMinimums.GP == nil then WOTLKEPGPMinimums.GP = 1 end
 
-    if TBCEPGPDecay == nil then TBCEPGPDecay = {} end
-    if TBCEPGPDecay.EP == nil then TBCEPGPDecay.EP = 15 end
-    if TBCEPGPDecay.GP == nil then TBCEPGPDecay.GP = 15 end
+    if WOTLKEPGPDecay == nil then WOTLKEPGPDecay = {} end
+    if WOTLKEPGPDecay.EP == nil then WOTLKEPGPDecay.EP = 15 end
+    if WOTLKEPGPDecay.GP == nil then WOTLKEPGPDecay.GP = 15 end
 
-    EPGPOptionsPanel.EPMinimum:SetText(TBCEPGPMinimums.EP)
-    EPGPOptionsPanel.GPMinimum:SetText(TBCEPGPMinimums.GP)
+    EPGPOptionsPanel.EPMinimum:SetText(WOTLKEPGPMinimums.EP)
+    EPGPOptionsPanel.GPMinimum:SetText(WOTLKEPGPMinimums.GP)
 
-    EPGPOptionsPanel.EPDecay:SetText(TBCEPGPDecay.EP)
-    EPGPOptionsPanel.GPDecay:SetText(TBCEPGPDecay.GP)
+    EPGPOptionsPanel.EPDecay:SetText(WOTLKEPGPDecay.EP)
+    EPGPOptionsPanel.GPDecay:SetText(WOTLKEPGPDecay.GP)
 
-    DecayConfirmWindow.WarningText2:SetText(string.format("|cFFFF0000EP Decay: %d%%\nGP Decay: %d%%|r", TBCEPGPDecay.EP, TBCEPGPDecay.GP))
+    DecayConfirmWindow.WarningText2:SetText(string.format("|cFFFF0000EP Decay: %d%%\nGP Decay: %d%%|r", WOTLKEPGPDecay.EP, WOTLKEPGPDecay.GP))
 end
 
-function TBCEPGP:ForceRecalculate()
-    local Players = TBCEPGPDataTable.Players
+function WOTLKEPGP:ForceRecalculate()
+    local Players = WOTLKEPGPDataTable.Players
     for curPlayer, playerData in pairs(Players) do
-        Players[curPlayer].PR = TBCEPGP:CalculatePriority(curPlayer, playerData.EP, playerData.GP)
+        Players[curPlayer].PR = WOTLKEPGP:CalculatePriority(curPlayer, playerData.EP, playerData.GP)
     end
-    TBCEPGP:FilterPlayers()
+    WOTLKEPGP:FilterPlayers()
 end
 
-function TBCEPGP:DelayedExecution(delayTime, delayedFunction)
+function WOTLKEPGP:DelayedExecution(delayTime, delayedFunction)
     local frame = CreateFrame("Frame")
     frame.start_time = GetServerTime()
     frame:SetScript("OnUpdate",
@@ -1250,28 +1251,28 @@ function TBCEPGP:DelayedExecution(delayTime, delayedFunction)
     frame:Show()
 end
 
-function TBCEPGP:ShareVersion() -- Change DelayedExecution to native WoW Function.
-    local versionString = string.format("|TBCEPGP:%d|", TBCEPGP.Version)
-    TBCEPGP:DelayedExecution(10, function()
+function WOTLKEPGP:ShareVersion() -- Change DelayedExecution to native WoW Function.
+    local versionString = string.format("|WOTLKEPGP:%d|", WOTLKEPGP.Version)
+    WOTLKEPGP:DelayedExecution(10, function()
         if UnitInBattleground("player") ~= nil then
             -- BG stuff?
         else
             if IsInGroup() then
                 if IsInRaid() then
-                    C_ChatInfo.SendAddonMessage("TBCEPGPVersion", versionString ,"RAID", 1)
+                    C_ChatInfo.SendAddonMessage("WOTLKEPGPVersion", versionString ,"RAID", 1)
                 else
-                    C_ChatInfo.SendAddonMessage("TBCEPGPVersion", versionString ,"PARTY", 1)
+                    C_ChatInfo.SendAddonMessage("WOTLKEPGPVersion", versionString ,"PARTY", 1)
                 end
             end
             if IsInGuild() then
-                C_ChatInfo.SendAddonMessage("TBCEPGPVersion", versionString ,"GUILD", 1)
+                C_ChatInfo.SendAddonMessage("WOTLKEPGPVersion", versionString ,"GUILD", 1)
             end
         end
     end)
 end
 
-function TBCEPGP:ReceiveVersion(version)
-    if version > TBCEPGP.Version then
+function WOTLKEPGP:ReceiveVersion(version)
+    if version > WOTLKEPGP.Version then
         if (not HaveShowedUpdateNotification) then
             HaveShowedUpdateNotification = true
             UpdateFrame:Show()
@@ -1279,13 +1280,13 @@ function TBCEPGP:ReceiveVersion(version)
                 "Please download the new version through the CurseForge app.\n" ..
                 "Or use the CurseForge website to download it manually!\n\n" ..
                 "Newer Version: v" .. version .. "\n" ..
-                "Your version: v" .. TBCEPGP.Version
+                "Your version: v" .. WOTLKEPGP.Version
             )
         end
     end
 end
 
-function TBCEPGP:GetSpecificAddonVersion(versionString, addonWanted)
+function WOTLKEPGP:GetSpecificAddonVersion(versionString, addonWanted)
     local pattern = "|([A-Z]+):([0-9]+)|"
     local index = 1
     while index < #versionString do
@@ -1298,21 +1299,21 @@ function TBCEPGP:GetSpecificAddonVersion(versionString, addonWanted)
     end
 end
 
-function TBCEPGP:TempDataChanger()
-    for key, value in pairs(TBCEPGP.DataTable.Players) do
-        if TBCEPGP.DataTable.Players[key].Class == "Warrior" then TBCEPGP.DataTable.Players[key].Class = 1 end
-        if TBCEPGP.DataTable.Players[key].Class == "Paladin" then TBCEPGP.DataTable.Players[key].Class = 2 end
-        if TBCEPGP.DataTable.Players[key].Class == "Hunter" then TBCEPGP.DataTable.Players[key].Class = 3 end
-        if TBCEPGP.DataTable.Players[key].Class == "Rogue" then TBCEPGP.DataTable.Players[key].Class = 4 end
-        if TBCEPGP.DataTable.Players[key].Class == "Priest" then TBCEPGP.DataTable.Players[key].Class = 5 end
-        if TBCEPGP.DataTable.Players[key].Class == "Shaman" then TBCEPGP.DataTable.Players[key].Class = 7 end
-        if TBCEPGP.DataTable.Players[key].Class == "Mage" then TBCEPGP.DataTable.Players[key].Class = 8 end
-        if TBCEPGP.DataTable.Players[key].Class == "Warlock" then TBCEPGP.DataTable.Players[key].Class = 9 end
-        if TBCEPGP.DataTable.Players[key].Class == "Druid" then TBCEPGP.DataTable.Players[key].Class = 11 end
+function WOTLKEPGP:TempDataChanger()
+    for key, value in pairs(WOTLKEPGP.DataTable.Players) do
+        if WOTLKEPGP.DataTable.Players[key].Class == "Warrior" then WOTLKEPGP.DataTable.Players[key].Class = 1 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Paladin" then WOTLKEPGP.DataTable.Players[key].Class = 2 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Hunter" then WOTLKEPGP.DataTable.Players[key].Class = 3 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Rogue" then WOTLKEPGP.DataTable.Players[key].Class = 4 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Priest" then WOTLKEPGP.DataTable.Players[key].Class = 5 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Shaman" then WOTLKEPGP.DataTable.Players[key].Class = 7 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Mage" then WOTLKEPGP.DataTable.Players[key].Class = 8 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Warlock" then WOTLKEPGP.DataTable.Players[key].Class = 9 end
+        if WOTLKEPGP.DataTable.Players[key].Class == "Druid" then WOTLKEPGP.DataTable.Players[key].Class = 11 end
     end
 end
 
-function TBCEPGP:CreateAdminFrame()
+function WOTLKEPGP:CreateAdminFrame()
     EPGPAdminFrame = CreateFrame("Frame", nil, UIParent)
     EPGPAdminFrame:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame:SetSize(670, 400)
@@ -1366,7 +1367,7 @@ function TBCEPGP:CreateAdminFrame()
 
     EPGPAdminFrame.Title.Text = EPGPAdminFrame.Title:CreateFontString("EPGPAdminFrame", "ARTWORK", "GameFontNormalLarge")
     EPGPAdminFrame.Title.Text:SetPoint("TOP", 0, -EPGPAdminFrame.Title:GetHeight() * 0.25 + 3)
-    EPGPAdminFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+    EPGPAdminFrame.Title.Text:SetText(AddOnName .. " - v" .. WOTLKEPGP.Version)
 
     EPGPAdminFrame.Title.Texture = EPGPAdminFrame.Title:CreateTexture(nil, "BACKGROUND")
     EPGPAdminFrame.Title.Texture:SetAllPoints()
@@ -1465,7 +1466,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curEP.LockUnlockButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curEP, "BackdropTemplate")
     EPGPAdminFrame.Header.curEP.LockUnlockButton:SetSize(25, 25)
     EPGPAdminFrame.Header.curEP.LockUnlockButton:SetPoint("RIGHT", 0, 0)
-    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetScript("OnClick", function() TBCEPGP:LockUnlockAdminControls("EP") end)
+    EPGPAdminFrame.Header.curEP.LockUnlockButton:SetScript("OnClick", function() WOTLKEPGP:LockUnlockAdminControls("EP") end)
     EPGPAdminFrame.Header.curEP.LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Locked-Up"})
 
     EPGPAdminFrame.Header.curEP.changeEP = CreateFrame("EditBox", nil, EPGPAdminFrame.Header.curEP, "InputBoxTemplate")
@@ -1474,7 +1475,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curEP.changeEP:SetAutoFocus(false)
     EPGPAdminFrame.Header.curEP.changeEP:SetFrameStrata("HIGH")
     EPGPAdminFrame.Header.curEP.changeEP:SetText(0)
-    EPGPAdminFrame.Header.curEP.changeEP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("EP") end)
+    EPGPAdminFrame.Header.curEP.changeEP:HookScript("OnEditFocusLost", function() WOTLKEPGP:MassChange("EP") end)
     EPGPAdminFrame.Header.curEP.changeEP:Hide()
 
     EPGPAdminFrame.Header.curGP = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
@@ -1492,7 +1493,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curGP.LockUnlockButton = CreateFrame("BUTTON", nil, EPGPAdminFrame.Header.curGP, "BackdropTemplate")
     EPGPAdminFrame.Header.curGP.LockUnlockButton:SetSize(25, 25)
     EPGPAdminFrame.Header.curGP.LockUnlockButton:SetPoint("RIGHT", 0, 0)
-    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetScript("OnClick", function() TBCEPGP:LockUnlockAdminControls("GP") end)
+    EPGPAdminFrame.Header.curGP.LockUnlockButton:SetScript("OnClick", function() WOTLKEPGP:LockUnlockAdminControls("GP") end)
     EPGPAdminFrame.Header.curGP.LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Locked-Up"})
 
     EPGPAdminFrame.Header.curGP.Text = EPGPAdminFrame.Header.curGP:CreateFontString("EPGPAdminFrame.Header.curGP.Text", "ARTWORK", "GameFontNormal")
@@ -1507,7 +1508,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curGP.changeGP:SetAutoFocus(false)
     EPGPAdminFrame.Header.curGP.changeGP:SetFrameStrata("HIGH")
     EPGPAdminFrame.Header.curGP.changeGP:SetText(0)
-    EPGPAdminFrame.Header.curGP.changeGP:HookScript("OnEditFocusLost", function() TBCEPGP:MassChange("GP") end)
+    EPGPAdminFrame.Header.curGP.changeGP:HookScript("OnEditFocusLost", function() WOTLKEPGP:MassChange("GP") end)
     EPGPAdminFrame.Header.curGP.changeGP:Hide()
 
     EPGPAdminFrame.Header.curPR = CreateFrame("Frame", nil, EPGPAdminFrame.Header, "BackdropTemplate")
@@ -1613,17 +1614,17 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.Header.curGP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame.Header.curPR.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
 
-    EPGPAdminFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    WOTLKEPGP:FilterPlayers() end)
 
-    EPGPAdminFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
-    EPGPAdminFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPAdminFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    WOTLKEPGP:FilterPlayers() end)
 
     local EPGPAdminFrameCloseButton = CreateFrame("Button", nil, EPGPAdminFrame, "UIPanelCloseButton, BackDropTemplate")
     EPGPAdminFrameCloseButton:SetSize(24, 24)
@@ -1670,13 +1671,13 @@ function TBCEPGP:CreateAdminFrame()
     PurgeConfirmWindow.PurgeDataButton:SetSize(100, 25)
     PurgeConfirmWindow.PurgeDataButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", -75, 75)
     PurgeConfirmWindow.PurgeDataButton:SetText("Purge Data")
-    PurgeConfirmWindow.PurgeDataButton:SetScript("OnClick", function() TBCEPGP:PurgeData() PurgeConfirmWindow:Hide() end)
+    PurgeConfirmWindow.PurgeDataButton:SetScript("OnClick", function() WOTLKEPGP:PurgeData() PurgeConfirmWindow:Hide() end)
 
     PurgeConfirmWindow.PurgePlayersButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
     PurgeConfirmWindow.PurgePlayersButton:SetSize(100, 25)
     PurgeConfirmWindow.PurgePlayersButton:SetPoint("TOP", PurgeConfirmWindow, "BOTTOM", 75, 75)
     PurgeConfirmWindow.PurgePlayersButton:SetText("Purge Players")
-    PurgeConfirmWindow.PurgePlayersButton:SetScript("OnClick", function() TBCEPGP:PurgePlayers() PurgeConfirmWindow:Hide() end)
+    PurgeConfirmWindow.PurgePlayersButton:SetScript("OnClick", function() WOTLKEPGP:PurgePlayers() PurgeConfirmWindow:Hide() end)
 
     PurgeConfirmWindow.CancelButton = CreateFrame("Button", nil, PurgeConfirmWindow, "UIPanelButtonTemplate")
     PurgeConfirmWindow.CancelButton:SetSize(100, 25)
@@ -1716,7 +1717,7 @@ function TBCEPGP:CreateAdminFrame()
     DecayConfirmWindow.ConfirmButton:SetSize(75, 25)
     DecayConfirmWindow.ConfirmButton:SetPoint("TOP", DecayConfirmWindow, "BOTTOM", -50, 35)
     DecayConfirmWindow.ConfirmButton:SetText("Confirm")
-    DecayConfirmWindow.ConfirmButton:SetScript("OnClick", function() TBCEPGP:DecayDataTable() DecayConfirmWindow:Hide() end)
+    DecayConfirmWindow.ConfirmButton:SetScript("OnClick", function() WOTLKEPGP:DecayDataTable() DecayConfirmWindow:Hide() end)
 
     DecayConfirmWindow.CancelButton = CreateFrame("Button", nil, DecayConfirmWindow, "UIPanelButtonTemplate")
     DecayConfirmWindow.CancelButton:SetSize(75, 25)
@@ -1741,8 +1742,8 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.OptionsButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.OptionsButton:SetScript("OnClick",
     function()
-        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
-        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+        InterfaceOptionsFrame_OpenToCategory("Wrath EPGP")
+        InterfaceOptionsFrame_OpenToCategory("Wrath EPGP")
     end)
     EPGPAdminFrame.OptionsButton.text = EPGPAdminFrame.OptionsButton:CreateFontString("OptionsButton", "ARTWORK", "GameFontNormalTiny")
     EPGPAdminFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
@@ -1754,12 +1755,12 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.AddToDataBaseButton:SetFrameStrata("HIGH")
     EPGPAdminFrame.AddToDataBaseButton:SetScript("OnClick",
     function()
-        local players = TBCEPGP.DataTable.Players
+        local players = WOTLKEPGP.DataTable.Players
         local unitGUID = UnitGUID("Target")
         local unitName = UnitName("Target")
         local _, _, unitClass = UnitClass("Target")
-        TBCEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
-        TBCEPGP:FillAdminFrameScrollPanel(players)
+        WOTLKEPGP:AddPlayerToList(unitGUID, unitName, unitClass)
+        WOTLKEPGP:FillAdminFrameScrollPanel(players)
     end)
     EPGPAdminFrame.AddToDataBaseButton.text = EPGPAdminFrame.AddToDataBaseButton:CreateFontString("AddToDataBaseButton", "ARTWORK", "GameFontNormalTiny")
     EPGPAdminFrame.AddToDataBaseButton.text:SetPoint("CENTER", 0, 0)
@@ -1778,7 +1779,7 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.SyncButton:SetSize(75, 20)
     EPGPAdminFrame.SyncButton:SetPoint("Right", EPGPAdminFrame.DecayButton, "Left", -10, 0)
     EPGPAdminFrame.SyncButton:SetFrameStrata("HIGH")
-    EPGPAdminFrame.SyncButton:SetScript("OnClick", function() TBCEPGP:SyncRaidersAddOnMsg() end)
+    EPGPAdminFrame.SyncButton:SetScript("OnClick", function() WOTLKEPGP:SyncRaidersAddOnMsg() end)
     EPGPAdminFrame.SyncButton.text = EPGPAdminFrame.SyncButton:CreateFontString("SyncButton", "ARTWORK", "GameFontNormalTiny")
     EPGPAdminFrame.SyncButton.text:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame.SyncButton.text:SetText("Sync")
@@ -1787,19 +1788,19 @@ function TBCEPGP:CreateAdminFrame()
     EPGPAdminFrame.LogsButton:SetSize(75, 20)
     EPGPAdminFrame.LogsButton:SetPoint("Right", EPGPAdminFrame.SyncButton, "Left", -10, 0)
     EPGPAdminFrame.LogsButton:SetFrameStrata("HIGH")
-    EPGPAdminFrame.LogsButton:SetScript("OnClick", function() EPGPAdminFrame:Hide() TBCEPGP:UpdateLogs() EPGPChangeLogFrame:Show() end)
+    EPGPAdminFrame.LogsButton:SetScript("OnClick", function() EPGPAdminFrame:Hide() WOTLKEPGP:UpdateLogs() EPGPChangeLogFrame:Show() end)
     EPGPAdminFrame.LogsButton.text = EPGPAdminFrame.LogsButton:CreateFontString("SyncButton", "ARTWORK", "GameFontNormalTiny")
     EPGPAdminFrame.LogsButton.text:SetPoint("CENTER", 0, 0)
     EPGPAdminFrame.LogsButton.text:SetText("Logs")
 
-    local players = TBCEPGP.DataTable.Players
-    TBCEPGP:FillAdminFrameScrollPanel(players)
+    local players = WOTLKEPGP.DataTable.Players
+    WOTLKEPGP:FillAdminFrameScrollPanel(players)
     scrollFrame:SetScrollChild(AdminScrollPanel)
 
     EPGPAdminFrame:Hide()
 end
 
-function TBCEPGP:LockUnlockAdminControls(Points)
+function WOTLKEPGP:LockUnlockAdminControls(Points)
     if EPGPAdminFrame[Points .. "Locked"] == true then
         EPGPAdminFrame[Points .. "Locked"] = false
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:Show()
@@ -1809,10 +1810,10 @@ function TBCEPGP:LockUnlockAdminControls(Points)
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:Hide()
         EPGPAdminFrame.Header["cur" .. Points].LockUnlockButton:SetBackdrop({bgFile = "Interface/Buttons/LockButton-Locked-Up"})
     end
-    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
+    WOTLKEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
-function TBCEPGP:CreateUserFrame()
+function WOTLKEPGP:CreateUserFrame()
     EPGPUserFrame = CreateFrame("Frame", nil, UIParent)
     EPGPUserFrame:SetPoint("CENTER", 0, 0)
     EPGPUserFrame:SetSize(470, 400)
@@ -1858,7 +1859,7 @@ function TBCEPGP:CreateUserFrame()
 
     EPGPUserFrame.Title.Text = EPGPUserFrame.Title:CreateFontString("EPGPUserFrame", "ARTWORK", "GameFontNormalLarge")
     EPGPUserFrame.Title.Text:SetPoint("TOP", 0, -EPGPUserFrame.Title:GetHeight() * 0.25 + 3)
-    EPGPUserFrame.Title.Text:SetText(AddOnName .. " - v" .. TBCEPGP.Version)
+    EPGPUserFrame.Title.Text:SetText(AddOnName .. " - v" .. WOTLKEPGP.Version)
 
     EPGPUserFrame.Title.Texture = EPGPUserFrame.Title:CreateTexture(nil, "BACKGROUND")
     EPGPUserFrame.Title.Texture:SetAllPoints()
@@ -2079,17 +2080,17 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.Header.curGP.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
     EPGPUserFrame.Header.curPR.SortDownButton.Texture:SetPoint("CENTER", 0, 0)
 
-    EPGPUserFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Name .SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Name"  WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Class.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "Class" WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curEP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "EP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curGP.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "GP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curPR.SortUpButton:SetScript("OnClick", function() sortDir = "Asc" sortCol = "PR"    WOTLKEPGP:FilterPlayers() end)
 
-    EPGPUserFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    TBCEPGP:FilterPlayers() end)
-    EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    TBCEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Name .SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Name"  WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.Class.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "Class" WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curEP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "EP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curGP.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "GP"    WOTLKEPGP:FilterPlayers() end)
+    EPGPUserFrame.Header.curPR.SortDownButton:SetScript("OnClick", function() sortDir = "Dsc" sortCol = "PR"    WOTLKEPGP:FilterPlayers() end)
 
     EPGPUserFrame.PurgeButton = CreateFrame("Button", nil, EPGPUserFrame, "UIPanelButtonTemplate")
     EPGPUserFrame.PurgeButton:SetSize(75, 20)
@@ -2106,8 +2107,8 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrame.OptionsButton:SetFrameStrata("HIGH")
     EPGPUserFrame.OptionsButton:SetScript("OnClick",
     function()
-        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
-        InterfaceOptionsFrame_OpenToCategory("TBC-EPGP")
+        InterfaceOptionsFrame_OpenToCategory("Wrath EPGP")
+        InterfaceOptionsFrame_OpenToCategory("Wrath EPGP")
     end)
     EPGPUserFrame.OptionsButton.text = EPGPUserFrame.OptionsButton:CreateFontString("OptionsButton", "ARTWORK", "GameFontNormalTiny")
     EPGPUserFrame.OptionsButton.text:SetPoint("CENTER", 0, 0)
@@ -2118,14 +2119,14 @@ function TBCEPGP:CreateUserFrame()
     EPGPUserFrameCloseButton:SetPoint("TOPRIGHT", EPGPUserFrame, "TOPRIGHT", -3, -3)
     EPGPUserFrameCloseButton:SetScript("OnClick", function() EPGPUserFrame:Hide() end)
 
-    local players = TBCEPGP.DataTable.Players
-    TBCEPGP:FillUserFrameScrollPanel(players)
+    local players = WOTLKEPGP.DataTable.Players
+    WOTLKEPGP:FillUserFrameScrollPanel(players)
     scrollFrame:SetScrollChild(UserScrollPanel)
 
     EPGPUserFrame:Hide()
 end
 
-function TBCEPGP:UpdateLogs()
+function WOTLKEPGP:UpdateLogs()
     local Index = 1
     for key, value in pairs(EPGPChangeLog) do
         local curLogFrame = ChangeLogsFrames[Index]
@@ -2187,68 +2188,68 @@ function TBCEPGP:UpdateLogs()
     end
 end
 
-function TBCEPGP:DecayDataTable()
-    local players = TBCEPGP.DataTable.Players
-    local EPDecay, GPDecay = TBCEPGPDecay.EP, TBCEPGPDecay.GP
-    local EPMin, GPMin = tonumber(TBCEPGPMinimums.EP), tonumber(TBCEPGPMinimums.GP)
+function WOTLKEPGP:DecayDataTable()
+    local players = WOTLKEPGP.DataTable.Players
+    local EPDecay, GPDecay = WOTLKEPGPDecay.EP, WOTLKEPGPDecay.GP
+    local EPMin, GPMin = tonumber(WOTLKEPGPMinimums.EP), tonumber(WOTLKEPGPMinimums.GP)
     for key, value in pairs(players) do
-        value.EP = TBCEPGP:MathRound(value.EP * (1000 * (1 - (EPDecay / 100)))) / 1000
+        value.EP = WOTLKEPGP:MathRound(value.EP * (1000 * (1 - (EPDecay / 100)))) / 1000
         if value.EP < EPMin then value.EP = EPMin end
-        value.GP = TBCEPGP:MathRound(value.GP * (1000 * (1 - (GPDecay / 100)))) / 1000
+        value.GP = WOTLKEPGP:MathRound(value.GP * (1000 * (1 - (GPDecay / 100)))) / 1000
         if value.GP < GPMin then value.GP = GPMin end
-        value.PR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
+        value.PR = WOTLKEPGP:CalculatePriority(key, value.EP, value.GP)
     end
-    TBCEPGP:FilterPlayers()
+    WOTLKEPGP:FilterPlayers()
 end
 
-function TBCEPGP:PurgeData()
-    for curGUID, curPlayerData in pairs(TBCEPGP.DataTable.Players) do
-        curPlayerData.EP = TBCEPGPMinimums.EP
-        curPlayerData.GP = TBCEPGPMinimums.GP
+function WOTLKEPGP:PurgeData()
+    for curGUID, curPlayerData in pairs(WOTLKEPGP.DataTable.Players) do
+        curPlayerData.EP = WOTLKEPGPMinimums.EP
+        curPlayerData.GP = WOTLKEPGPMinimums.GP
         curPlayerData.Update = time()
-        TBCEPGP:CalculatePriority(curGUID, curPlayerData.EP, curPlayerData.GP)
+        WOTLKEPGP:CalculatePriority(curGUID, curPlayerData.EP, curPlayerData.GP)
 
     end
-    TBCEPGP:FilterPlayers()
+    WOTLKEPGP:FilterPlayers()
 end
 
-function TBCEPGP:PurgePlayers()
-    TBCEPGPDataTable.Players = {}
-    TBCEPGP:FilterPlayers()
+function WOTLKEPGP:PurgePlayers()
+    WOTLKEPGPDataTable.Players = {}
+    WOTLKEPGP:FilterPlayers()
 end
 
-function TBCEPGP:MassChange(Points)
+function WOTLKEPGP:MassChange(Points)
     local PointsChange = tonumber(EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:GetText())
     if PointsChange ~= nil and PointsChange ~= 0 then
-        local players = TBCEPGPDataTable.Players
+        local players = WOTLKEPGPDataTable.Players
         if filteredPlayers == nil then filteredPlayers = players end
         for key, _ in pairs(filteredPlayers) do
-            TBCEPGP:ChangePoints(key, Points, PointsChange)
+            WOTLKEPGP:ChangePoints(key, Points, PointsChange)
         end
         EPGPAdminFrame.Header["cur" .. Points]["change" .. Points]:SetText(0)
-        TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
-        TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
+        WOTLKEPGP:FillUserFrameScrollPanel(filteredPlayers)
+        WOTLKEPGP:FillAdminFrameScrollPanel(filteredPlayers)
     end
 end
 
-function TBCEPGP:ChangePoints(curGUID, Points, Amount)
-    Amount = TBCEPGP:MathRound(Amount * 1000) / 1000
-    local curPlayer = TBCEPGPDataTable.Players[curGUID]
+function WOTLKEPGP:ChangePoints(curGUID, Points, Amount)
+    Amount = WOTLKEPGP:MathRound(Amount * 1000) / 1000
+    local curPlayer = WOTLKEPGPDataTable.Players[curGUID]
     curPlayer[Points] = curPlayer[Points] + Amount
     curPlayer.Update = time()
     if curGUID == nil or curPlayer.Update == nil then
-        local tempNumber = #TBCEPGPVersionData.ErrorInfo + 1
-        local y, m, d = TBCEPGP:GetDateTime()
-        TBCEPGPVersionData.ErrorInfo[tempNumber] = {Time = time(), Date = string.format("%s/%s/%s", d, m, y), GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = TBCEPGP.Version}
+        local tempNumber = #WOTLKEPGPVersionData.ErrorInfo + 1
+        local y, m, d = WOTLKEPGP:GetDateTime()
+        WOTLKEPGPVersionData.ErrorInfo[tempNumber] = {Time = time(), Date = string.format("%s/%s/%s", d, m, y), GUID = UnitGUID("Player"), Name = UnitName("Player"), Version = WOTLKEPGP.Version}
     end
     EPGPChangeLog[string.format("%s-%d", curGUID, curPlayer.Update)] = {Name = curPlayer.Name, Date = date("%m/%d/%y - %H:%M:%S"), Change = Points, Amount = Amount, Admin = UnitName("Player")}
-    TBCEPGP:CalculatePriority(curGUID, curPlayer.EP, curPlayer.GP)
+    WOTLKEPGP:CalculatePriority(curGUID, curPlayer.EP, curPlayer.GP)
 end
 
-function TBCEPGP:FilterPlayers()
+function WOTLKEPGP:FilterPlayers()
     filteredPlayers = {}
-    local players = TBCEPGPDataTable.Players
-    local raidGUIDs = TBCEPGP:CollectPlayersInRaid()
+    local players = WOTLKEPGPDataTable.Players
+    local raidGUIDs = WOTLKEPGP:CollectPlayersInRaid()
 
     for key, value in pairs(players) do
         for i = 1, 11 do
@@ -2283,16 +2284,16 @@ function TBCEPGP:FilterPlayers()
         filteredPlayers = raidPlayers
     end
 
-    TBCEPGP:FillUserFrameScrollPanel(filteredPlayers)
-    TBCEPGP:FillAdminFrameScrollPanel(filteredPlayers)
+    WOTLKEPGP:FillUserFrameScrollPanel(filteredPlayers)
+    WOTLKEPGP:FillAdminFrameScrollPanel(filteredPlayers)
 end
 
-function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
+function WOTLKEPGP:FillAdminFrameScrollPanel(inputPlayers)
     local players = inputPlayers
     local filteredPlayerFrames = {}
     local index = 1
 
-    if inputPlayers == nil then players = TBCEPGP.DataTable.Players end
+    if inputPlayers == nil then players = WOTLKEPGP.DataTable.Players end
 
     for _, value in pairs(adminPlayerFrames) do
         value:Hide()
@@ -2365,12 +2366,12 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeEP:GetText())
 
-                TBCEPGP:ChangePoints(curPlayerFrame.key, "EP", PointsChange)
+                WOTLKEPGP:ChangePoints(curPlayerFrame.key, "EP", PointsChange)
 
                 curPlayerFrame.curEP:SetText(players[curPlayerFrame.key].EP)
                 curPlayerFrame.changeEP:SetText(0)
 
-                local curPR = TBCEPGP:CalculatePriority(curPlayerFrame.key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                local curPR = WOTLKEPGP:CalculatePriority(curPlayerFrame.key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
 
@@ -2378,19 +2379,19 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
             function()
                 local PointsChange = tonumber(curPlayerFrame.changeGP:GetText())
 
-                TBCEPGP:ChangePoints(curPlayerFrame.key, "GP", PointsChange)
+                WOTLKEPGP:ChangePoints(curPlayerFrame.key, "GP", PointsChange)
 
                 curPlayerFrame.curGP:SetText(players[curPlayerFrame.key].GP)
                 curPlayerFrame.changeGP:SetText(0)
 
-                local curPR = TBCEPGP:CalculatePriority(curPlayerFrame.key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
+                local curPR = WOTLKEPGP:CalculatePriority(curPlayerFrame.key, players[curPlayerFrame.key].EP, players[curPlayerFrame.key].GP)
                 curPlayerFrame.curPR:SetText(curPR)
             end)
         end
 
         curPlayerFrame.delButton:SetScript("OnClick", function()
-            TBCEPGPDataTable.Players[key] = nil
-            TBCEPGP:FilterPlayers()
+            WOTLKEPGPDataTable.Players[key] = nil
+            WOTLKEPGP:FilterPlayers()
         end)
 
         if EPGPAdminFrame.EPLocked == true then
@@ -2414,7 +2415,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
-        curPR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
+        curPR = WOTLKEPGP:CalculatePriority(key, value.EP, value.GP)
 
         curPlayerFrame:Show()
 
@@ -2433,7 +2434,7 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
 
     if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            return TBCEPGP:ComparePlayers(players, a, b)
+            return WOTLKEPGP:ComparePlayers(players, a, b)
         end)
     end
 
@@ -2442,12 +2443,12 @@ function TBCEPGP:FillAdminFrameScrollPanel(inputPlayers)
     end
 end
 
-function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
+function WOTLKEPGP:FillUserFrameScrollPanel(inputPlayers)
     local players = inputPlayers
     local filteredPlayerFrames = {}
     local index = 1
 
-    if inputPlayers == nil then players = TBCEPGP.DataTable.Players end
+    if inputPlayers == nil then players = WOTLKEPGP.DataTable.Players end
 
     for _, value in pairs(userPlayerFrames) do
         value:Hide()
@@ -2508,7 +2509,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
         curClass = value.Class
         curEP = value.EP
         curGP = value.GP
-        curPR = TBCEPGP:CalculatePriority(key, value.EP, value.GP)
+        curPR = WOTLKEPGP:CalculatePriority(key, value.EP, value.GP)
 
         curPlayerFrame:Show()
 
@@ -2527,7 +2528,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
 
     if sortCol ~= nil then
         table.sort(filteredPlayerFrames, function(a, b)
-            return TBCEPGP:ComparePlayers(players, a, b)
+            return WOTLKEPGP:ComparePlayers(players, a, b)
         end)
     end
 
@@ -2536,7 +2537,7 @@ function TBCEPGP:FillUserFrameScrollPanel(inputPlayers)
     end
 end
 
-function TBCEPGP:ComparePlayers(sortTable, a, b)
+function WOTLKEPGP:ComparePlayers(sortTable, a, b)
     local aSort = sortTable[a.key][sortCol]
     local bSort = sortTable[b.key][sortCol]
 
@@ -2547,16 +2548,16 @@ function TBCEPGP:ComparePlayers(sortTable, a, b)
     end
 end
 
-function TBCEPGP:CalculatePriority(curGUID, curEP, curGP)
-    curEP = curEP + TBCEPGPPRCalc[1]
-    curGP = curGP + TBCEPGPPRCalc[2]
+function WOTLKEPGP:CalculatePriority(curGUID, curEP, curGP)
+    curEP = curEP + WOTLKEPGPPRCalc[1]
+    curGP = curGP + WOTLKEPGPPRCalc[2]
     local curPR = nil
-    if curEP == 0 or curGP == 0 then curPR = 0 else curPR = TBCEPGP:MathRound(curEP/curGP * 1000) / 1000 end
-    TBCEPGP.DataTable.Players[curGUID].PR = curPR
+    if curEP == 0 or curGP == 0 then curPR = 0 else curPR = WOTLKEPGP:MathRound(curEP/curGP * 1000) / 1000 end
+    WOTLKEPGP.DataTable.Players[curGUID].PR = curPR
     return curPR
 end
 
-function TBCEPGP.Events:LootOpened()
+function WOTLKEPGP.Events:LootOpened()
     local lootmethod, _, MLRaidIndex = GetLootMethod()
 
     if lootmethod == "master" and MLRaidIndex == UnitInRaid("player") then
@@ -2564,13 +2565,13 @@ function TBCEPGP.Events:LootOpened()
             local _, lootName, lootQuantity, _, lootQuality, _, isQuestItem, _, isActive = GetLootSlotInfo(i)
             if lootName ~= nil and isQuestItem == false and isActive == nil and lootQuality >= 1 then
                 local itemLink = GetLootSlotLink(i)
-                TBCEPGP:LootItemAddOnMsg(itemLink)
+                WOTLKEPGP:LootItemAddOnMsg(itemLink)
             end
         end
     end
 end
 
-function TBCEPGP:AddItemToLootList(itemName, itemTexture, GPValue, itemLink)
+function WOTLKEPGP:AddItemToLootList(itemName, itemTexture, GPValue, itemLink)
     EPGPLootFrame:Show()
     local ItemAlreadyInList = false
     for i = 1, #EPGPActiveLootItems do
@@ -2586,11 +2587,11 @@ function TBCEPGP:AddItemToLootList(itemName, itemTexture, GPValue, itemLink)
             players = {Need = {}, Greed = {},},
         }
     end
-    TBCEPGP:FillLootFrameScrollPanel()
+    WOTLKEPGP:FillLootFrameScrollPanel()
 end
 
-function TBCEPGP:AddPlayerToItem(Roll, Index, GUID)
-    local curPlayer = TBCEPGPDataTable.Players[GUID]
+function WOTLKEPGP:AddPlayerToItem(Roll, Index, GUID)
+    local curPlayer = WOTLKEPGPDataTable.Players[GUID]
     local PR = curPlayer.PR
     local Name = curPlayer.Name
     local players = EPGPActiveLootItems[Index].players[Roll]
@@ -2609,11 +2610,11 @@ function TBCEPGP:AddPlayerToItem(Roll, Index, GUID)
             end
             LootItemFrames[Index][Roll]:SetText(PlayerString)
         end
-        TBCEPGP:LootItemFrameResize(Index)
+        WOTLKEPGP:LootItemFrameResize(Index)
     end
 end
 
-function TBCEPGP:FillLootFrameScrollPanel()
+function WOTLKEPGP:FillLootFrameScrollPanel()
     for i = 1, #EPGPActiveLootItems do
         local curItemFrame = LootItemFrames[i]
         if curItemFrame == nil then
@@ -2673,7 +2674,7 @@ function TBCEPGP:FillLootFrameScrollPanel()
             curItemFrame.needButton = CreateFrame("BUTTON", nil, curItemFrame, "UIPanelButtonTemplate")
             curItemFrame.needButton:SetSize(EPGPLootFrame.Header.buttons:GetWidth() / 2 - 10, 20)
             curItemFrame.needButton:SetPoint("TOPLEFT", curItemFrame.Greed, "TOPRIGHT", 5, 0)
-            curItemFrame.needButton:SetScript("OnClick", function() TBCEPGP:LootRollAddOnMsg("Need", i) end)
+            curItemFrame.needButton:SetScript("OnClick", function() WOTLKEPGP:LootRollAddOnMsg("Need", i) end)
             curItemFrame.needButton.text = curItemFrame.needButton:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
             curItemFrame.needButton.text:SetText("Need Item")
             curItemFrame.needButton.text:SetPoint("CENTER", 0, 0)
@@ -2681,7 +2682,7 @@ function TBCEPGP:FillLootFrameScrollPanel()
             curItemFrame.greedButton = CreateFrame("BUTTON", nil, curItemFrame, "UIPanelButtonTemplate")
             curItemFrame.greedButton:SetSize(EPGPLootFrame.Header.buttons:GetWidth() / 2 - 10, 20)
             curItemFrame.greedButton:SetPoint("TOPLEFT", curItemFrame.needButton, "TOPRIGHT", 5, 0)
-            curItemFrame.greedButton:SetScript("OnClick", function() TBCEPGP:LootRollAddOnMsg("Greed", i) end)
+            curItemFrame.greedButton:SetScript("OnClick", function() WOTLKEPGP:LootRollAddOnMsg("Greed", i) end)
             curItemFrame.greedButton.text = curItemFrame.greedButton:CreateFontString("curItemFrame", "ARTWORK", "GameFontNormal")
             curItemFrame.greedButton.text:SetText("Greed Item")
             curItemFrame.greedButton.text:SetPoint("CENTER", 0, 0)
@@ -2699,31 +2700,31 @@ function TBCEPGP:FillLootFrameScrollPanel()
             curItemFrame.Greed:SetFont(curLFont, curLSize, curLFlags)
 
             LootItemFrames[i] = curItemFrame
-            TBCEPGP:LootItemFrameResize(i)
+            WOTLKEPGP:LootItemFrameResize(i)
         end
     end
 end
 
-function TBCEPGP:LootRollAddOnMsg(Roll, Index)
-    local prefix = "TBCEPGPRoll"
+function WOTLKEPGP:LootRollAddOnMsg(Roll, Index)
+    local prefix = "WOTLKEPGPRoll"
     local curGUID = UnitGUID("PLAYER")
     local message = "Roll:" .. Roll .. ":" .. Index .. ":" .. curGUID .. ":"
     C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
 end
 
-function TBCEPGP:LootItemAddOnMsg(itemName)
-    local itemStuff = TBCEPGP:CheckItemInfo(itemName)
-    local GPValue = TBCEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
+function WOTLKEPGP:LootItemAddOnMsg(itemName)
+    local itemStuff = WOTLKEPGP:CheckItemInfo(itemName)
+    local GPValue = WOTLKEPGP:CalculateTotalPrice(itemStuff.itemQuality, itemStuff.itemEquipLoc, itemStuff.itemLevel)
 
-    if itemEquipLoc ~= nil and TBCEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
-        local prefix = "TBCEPGPItem"
+    if itemEquipLoc ~= nil and WOTLKEPGP.InfoTable.Slot[itemEquipLoc] ~= nil then
+        local prefix = "WOTLKEPGPItem"
         --local message = "Item:" .. itemName .. ":" .. itemTexture .. ":" .. GPValue .. ":" .. itemLink .. ":"
         local message = "Item:" .. itemStuff.itemName .. ":" .. itemStuff.itemTexture .. ":" .. GPValue .. ":" .. itemStuff.itemLink .. ":"
         C_ChatInfo.SendAddonMessage(prefix, message , "RAID", 1)
     end
 end
 
-function TBCEPGP:LootItemFrameResize(Index)
+function WOTLKEPGP:LootItemFrameResize(Index)
     local curIFrameHeight = #EPGPActiveLootItems[Index].players.Need
     if #EPGPActiveLootItems[Index].players.Greed >= curIFrameHeight then curIFrameHeight = #EPGPActiveLootItems[Index].players.Greed end
     if curIFrameHeight >= 3 then curIFrameHeight = curIFrameHeight * 10 + 5 else curIFrameHeight = 32 end
@@ -2732,53 +2733,53 @@ function TBCEPGP:LootItemFrameResize(Index)
     LootItemFrames[Index].Greed:SetSize(EPGPLootFrame.Header.playersGreed:GetWidth(), LootItemFrames[Index]:GetHeight())
 end
 
-TBCEPGP:OnLoad()
+WOTLKEPGP:OnLoad()
 
-TBCEPGP.SlashCommands["roll"] = function(value)
-    TBCEPGP:RollItem(value)
+WOTLKEPGP.SlashCommands["roll"] = function(value)
+    WOTLKEPGP:RollItem(value)
 end
 
-TBCEPGP.SlashCommands["sync"] = function(value)
-    TBCEPGP:SyncRaidersAddOnMsg()
+WOTLKEPGP.SlashCommands["sync"] = function(value)
+    WOTLKEPGP:SyncRaidersAddOnMsg()
 end
 
-TBCEPGP.SlashCommands["add"] = function(value)
+WOTLKEPGP.SlashCommands["add"] = function(value)
     local curGUID = UnitGUID("Target")
     local curName = UnitName("Target")
     local _, _, curClass = UnitClass("Target")
-    TBCEPGP:AddPlayerToList(curGUID, curName, curClass)
+    WOTLKEPGP:AddPlayerToList(curGUID, curName, curClass)
 end
 
-TBCEPGP.SlashCommands["show"] = function(value)
-    if TBCEPGPShowAdminView == true then
+WOTLKEPGP.SlashCommands["show"] = function(value)
+    if WOTLKEPGPShowAdminView == true then
         EPGPAdminFrame:Show()
-    elseif TBCEPGPShowAdminView == false then
+    elseif WOTLKEPGPShowAdminView == false then
         EPGPUserFrame:Show()
     end
 end
 
-TBCEPGP.SlashCommands["loot"] = function(value)
+WOTLKEPGP.SlashCommands["loot"] = function(value)
     EPGPLootFrame:Show()
 end
 
-TBCEPGP.SlashCommands["recalc"] = function(value)
-    TBCEPGP:ForceRecalculate()
+WOTLKEPGP.SlashCommands["recalc"] = function(value)
+    WOTLKEPGP:ForceRecalculate()
 end
 
-TBCEPGP.SlashCommands["Roll"] = TBCEPGP.SlashCommands["roll"]
-TBCEPGP.SlashCommands["ROLL"] = TBCEPGP.SlashCommands["roll"]
+WOTLKEPGP.SlashCommands["Roll"] = WOTLKEPGP.SlashCommands["roll"]
+WOTLKEPGP.SlashCommands["ROLL"] = WOTLKEPGP.SlashCommands["roll"]
 
-TBCEPGP.SlashCommands["Sync"] = TBCEPGP.SlashCommands["sync"]
-TBCEPGP.SlashCommands["SYNC"] = TBCEPGP.SlashCommands["sync"]
+WOTLKEPGP.SlashCommands["Sync"] = WOTLKEPGP.SlashCommands["sync"]
+WOTLKEPGP.SlashCommands["SYNC"] = WOTLKEPGP.SlashCommands["sync"]
 
-TBCEPGP.SlashCommands["Add"] = TBCEPGP.SlashCommands["add"]
-TBCEPGP.SlashCommands["ADD"] = TBCEPGP.SlashCommands["add"]
+WOTLKEPGP.SlashCommands["Add"] = WOTLKEPGP.SlashCommands["add"]
+WOTLKEPGP.SlashCommands["ADD"] = WOTLKEPGP.SlashCommands["add"]
 
-TBCEPGP.SlashCommands["Show"] = TBCEPGP.SlashCommands["show"]
-TBCEPGP.SlashCommands["SHOW"] = TBCEPGP.SlashCommands["show"]
+WOTLKEPGP.SlashCommands["Show"] = WOTLKEPGP.SlashCommands["show"]
+WOTLKEPGP.SlashCommands["SHOW"] = WOTLKEPGP.SlashCommands["show"]
 
-TBCEPGP.SlashCommands["Loot"] = TBCEPGP.SlashCommands["loot"]
-TBCEPGP.SlashCommands["LOOT"] = TBCEPGP.SlashCommands["loot"]
+WOTLKEPGP.SlashCommands["Loot"] = WOTLKEPGP.SlashCommands["loot"]
+WOTLKEPGP.SlashCommands["LOOT"] = WOTLKEPGP.SlashCommands["loot"]
 
-TBCEPGP.SlashCommands["ReCalc"] = TBCEPGP.SlashCommands["recalc"]
-TBCEPGP.SlashCommands["RECALC"] = TBCEPGP.SlashCommands["recalc"]
+WOTLKEPGP.SlashCommands["ReCalc"] = WOTLKEPGP.SlashCommands["recalc"]
+WOTLKEPGP.SlashCommands["RECALC"] = WOTLKEPGP.SlashCommands["recalc"]

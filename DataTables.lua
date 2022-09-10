@@ -1,5 +1,5 @@
-if TBCEPGP == nil then TBCEPGP = {} end
-TBCEPGP.InfoTable =
+if WOTLKEPGP == nil then WOTLKEPGP = {} end
+WOTLKEPGP.InfoTable =
 {
     ["Quality"] =
     {
@@ -106,5 +106,5 @@ TBCEPGP.InfoTable =
     }
 }
 
-TBCEPGP.DataTable = {["Players"] = {},} -- DO NOT DELETE, DYNAMIC USE!
-TBCEPGP.RegisteredEvents = {} -- DO NOT DELETE, DYNAMIC USE!
+WOTLKEPGP.DataTable = {["Players"] = {},} -- DO NOT DELETE, DYNAMIC USE!
+WOTLKEPGP.RegisteredEvents = {} -- DO NOT DELETE, DYNAMIC USE!

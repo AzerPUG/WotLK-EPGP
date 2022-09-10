@@ -1,6 +1,6 @@
-if TBCEPGP == nil then TBCEPGP = {} end
-if TBCEPGP.SlashCommands == nil then
-    TBCEPGP.SlashCommands = {}
+if WOTLKEPGP == nil then WOTLKEPGP = {} end
+if WOTLKEPGP.SlashCommands == nil then
+    WOTLKEPGP.SlashCommands = {}
     SLASH_EPGP1 = '/epgp'
     SlashCmdList['EPGP'] = function(arg)
         local spaceLoc = arg:find(" ")
@@ -12,7 +12,7 @@ if TBCEPGP.SlashCommands == nil then
             command = arg:sub(0, spaceLoc - 1)
             value = arg:sub(spaceLoc + 1, #arg)
         end
-        local fn = TBCEPGP.SlashCommands[command]
+        local fn = WOTLKEPGP.SlashCommands[command]
         if type(fn) == "function" then
             fn(value)
         end

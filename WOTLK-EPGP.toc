@@ -1,0 +1,9 @@
+## Interface: 20504
+## Title: Wrath EPGP
+## Author: Tex & AzerPUG Gaming Community (www.azerpug.com/discord)
+## Notes: EPGP AddOn for World of Warcraft: Wrath of the Lich King, extended from The Burning Crusade.
+## SavedVariablesPerCharacter: WOTLKEPGPDataTable, WOTLKEPGPAdminList, WOTLKEPGPShowAdminView, WOTLKEPGPVersionData, EPGPChangeLog, WOTLKEPGPPRCalc, WOTLKEPGPMinimums, WOTLKEPGPDecay
+
+SlashCommand.lua
+DataTables.lua
+EPGP.lua
